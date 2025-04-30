@@ -1,0 +1,56 @@
+//
+//  UnauthorizedView.swift
+//  wanderly-frontend
+//
+//  Created by Yurii Serhiienko on 30.04.2025.
+//
+
+import SwiftUI
+
+struct UnauthorizedView: View {
+    @EnvironmentObject private var appState: AppState
+    @StateObject private var viewModel: UnauthorizedViewModel
+    
+    init() {
+        _viewModel = StateObject(wrappedValue: UnauthorizedViewModel())
+    }
+    
+    var body: some View {
+        ZStack {
+            switch viewModel.unauthFlow {
+            case .login:
+                LoginView(viewModel: viewModel)
+                    .transition(.blurReplace)
+            case .register:
+                RegisterView(viewModel: viewModel)
+                    .transition(.blurReplace)
+            case .verification:
+                VerificationView(viewModel.email, viewModel.password)
+                    .transition(.move(edge: .trailing))
+            }
+        }
+        .toolbar {
+            if viewModel.unauthFlow == .verification {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("", systemImage: "chevron.left") {
+                        withAnimation {
+                            viewModel.unauthFlow = .register
+                        }
+                    }
+                }
+            }
+        }
+        .onAppear {
+            print("init unauthorized")
+            viewModel.unauthFlow = .login
+            
+            viewModel.email = "sergienkoyura5@gmail.com"
+            viewModel.password = "dfgfdgdfgdfg1"
+        }
+    }
+}
+
+#Preview {
+    UnauthorizedView()
+        .environmentObject(AppState.shared)
+}

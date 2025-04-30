@@ -10,9 +10,22 @@
 		94129DFE2DC10CD700DD2089 /* wanderly-frontend.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "wanderly-frontend.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		94C5C9AA2DC12DAF00A08ECD /* Exceptions for "wanderly-frontend" folder in "wanderly-frontend" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 94129DFD2DC10CD700DD2089 /* wanderly-frontend */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		94129E002DC10CD700DD2089 /* wanderly-frontend */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				94C5C9AA2DC12DAF00A08ECD /* Exceptions for "wanderly-frontend" folder in "wanderly-frontend" target */,
+			);
 			path = "wanderly-frontend";
 			sourceTree = "<group>";
 		};
@@ -256,6 +269,7 @@
 				DEVELOPMENT_TEAM = 9H522AA39K;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "wanderly-frontend/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Wanderly;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -290,6 +304,7 @@
 				DEVELOPMENT_TEAM = 9H522AA39K;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "wanderly-frontend/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Wanderly;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
