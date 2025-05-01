@@ -7,24 +7,16 @@
 
 import SwiftUI
 
-enum TravelType: String, CaseIterable {
-    case foot, car
-}
-
-enum ActivityType: String, CaseIterable {
-    case indoor, outdoor, combined
-}
-
 struct QuizView: View {
     @EnvironmentObject private var appState: AppState
     @State private var name: String = ""
        @State private var city: String = ""
-       @State private var travelType: TravelType = .foot
+       @State private var travelType: TravelType = .FOOT
        @State private var routeTime: Double = 2
-       @State private var activityType: ActivityType = .combined
+       @State private var activityType: ActivityType = .COMBINED
        
        var body: some View {
-//           NavigationStack {
+           NavigationStack {
                
                Form {
                    Section(header: Text("Who are you?")) {
@@ -61,7 +53,7 @@ struct QuizView: View {
                    }
                }
                .navigationTitle("Introduce Yourself")
-//           }
+           }
        }
 }
 

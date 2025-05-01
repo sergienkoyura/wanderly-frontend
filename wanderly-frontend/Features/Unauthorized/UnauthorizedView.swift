@@ -16,36 +16,39 @@ struct UnauthorizedView: View {
     }
     
     var body: some View {
-        ZStack {
-            switch viewModel.unauthFlow {
-            case .login:
-                LoginView(viewModel: viewModel)
-                    .transition(.blurReplace)
-            case .register:
-                RegisterView(viewModel: viewModel)
-                    .transition(.blurReplace)
-            case .verification:
-                VerificationView(viewModel.email, viewModel.password)
-                    .transition(.move(edge: .trailing))
+        NavigationStack {
+            
+            ZStack {
+                switch viewModel.unauthFlow {
+                case .login:
+                    LoginView(viewModel: viewModel)
+                        .transition(.blurReplace)
+                case .register:
+                    RegisterView(viewModel: viewModel)
+                        .transition(.blurReplace)
+                case .verification:
+                    VerificationView(viewModel.email, viewModel.password)
+                        .transition(.move(edge: .trailing))
+                }
             }
-        }
-        .toolbar {
-            if viewModel.unauthFlow == .verification {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("", systemImage: "chevron.left") {
-                        withAnimation {
-                            viewModel.unauthFlow = .register
+            .toolbar {
+                if viewModel.unauthFlow == .verification {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("", systemImage: "chevron.left") {
+                            withAnimation {
+                                viewModel.unauthFlow = .register
+                            }
                         }
                     }
                 }
             }
-        }
-        .onAppear {
-            print("init unauthorized")
-            viewModel.unauthFlow = .login
-            
-            viewModel.email = "sergienkoyura5@gmail.com"
-            viewModel.password = "dfgfdgdfgdfg1"
+            .onAppear {
+                print("init unauthorized")
+                viewModel.unauthFlow = .login
+                
+                viewModel.email = "sergienkoyura5@gmail.com"
+                viewModel.password = "dfgfdgdfgdfg1"
+            }
         }
     }
 }
