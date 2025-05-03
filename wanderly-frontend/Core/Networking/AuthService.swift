@@ -15,18 +15,18 @@ enum AuthService {
             baseURL: baseURL,
             endpoint: "login",
             method: "POST",
-            body: ["email": email, "password": password],
-            responseType: AuthResponse.self
+            body: AuthRequest(email: email, password: password, code: nil),
+            injectToken: false
         )!
     }
     
     static func register(email: String, password: String) async throws {
-        _ = try await ApiClient.request(
+        let _: EmptyResponse? = try await ApiClient.request(
             baseURL: baseURL,
             endpoint: "register",
             method: "POST",
-            body: ["email": email, "password": password],
-            responseType: EmptyResponse.self
+            body: AuthRequest(email: email, password: password, code: nil),
+            injectToken: false
         )
     }
     
@@ -35,8 +35,19 @@ enum AuthService {
             baseURL: baseURL,
             endpoint: "verify-registration",
             method: "POST",
-            body: ["email": email, "password": password, "code": code],
-            responseType: AuthResponse.self
+            body: AuthRequest(email: email, password: password, code: code),
+            injectToken: false
+        )!
+    }
+    
+    static func refresh() async throws -> AuthResponse {
+        print("refresh token is \(TokenStorage.getRefreshToken() ?? "")")
+        return try await ApiClient.request(
+            baseURL: baseURL,
+            endpoint: "refresh-token",
+            method: "POST",
+            body: ["refreshToken": TokenStorage.getRefreshToken() ?? ""],
+            injectToken: false
         )!
     }
 }

@@ -22,6 +22,8 @@ struct RootView: View {
             case .unauthorized:
                 UnauthorizedView()
                     .transition(.move(edge: .top))
+            case .none:
+                ProgressView()
             }
         }
         .animation(.easeInOut, value: appState.appFlow)

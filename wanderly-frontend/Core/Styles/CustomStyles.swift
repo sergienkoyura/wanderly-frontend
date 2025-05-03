@@ -17,9 +17,9 @@ struct OutlinedTextFieldStyle: TextFieldStyle {
             .padding()
             .padding(.trailing, isPassword ? 30 : 0)
             .background(Color(UIColor.systemGray6))
-            .cornerRadius(10)
+            .cornerRadius(8)
             .overlay(
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 8)
                     .stroke(Color(isPrimary ? .primary : .secondary), lineWidth: isActive ? 2 : 1)
             )
             .foregroundStyle(.primary)
@@ -38,7 +38,7 @@ struct ProminentButtonStyle: ButtonStyle {
             .padding()
             .background(backgroundColor)
             .foregroundColor(.white)
-            .cornerRadius(10)
+            .cornerRadius(8)
             .opacity(configuration.isPressed ? 0.8 : 1.0)
             .animation(.easeInOut(duration: 0.3), value: isEnabled)
     }

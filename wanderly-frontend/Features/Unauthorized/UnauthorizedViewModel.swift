@@ -13,11 +13,7 @@ enum UnauthorizedFlow {
     case verification
 }
 
-enum Field {
-    case email
-    case password
-}
-
+@MainActor
 final class UnauthorizedViewModel: ObservableObject {
     @Published var unauthFlow: UnauthorizedFlow = .login
     

@@ -79,7 +79,6 @@ struct VerificationView: View {
             startTimer()
 //            isFocused = true
         }
-        .hideKeyboardOnTapOutside()
     }
 
     func verify() {

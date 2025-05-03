@@ -8,6 +8,7 @@
 
 import Foundation
 
+@MainActor
 final class VerificationViewModel: ObservableObject {
     let email: String
     let password: String

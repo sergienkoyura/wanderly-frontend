@@ -14,8 +14,5 @@ struct UserPreferences: Decodable, Encodable {
     var travelType: TravelType
     var timePerRoute: Int
     var activityType: ActivityType
-    var notifications: Bool
-    var geoposition: Bool
-    var healthKit: Bool
-    var cityId: UUID
+    var city: CityResult
 }

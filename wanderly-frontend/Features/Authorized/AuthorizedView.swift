@@ -13,14 +13,31 @@ enum AuthorizedFlow {
 }
 
 struct AuthorizedView: View {
-    @State var authFlow: AuthorizedFlow = .quiz
+    @State var authFlow: AuthorizedFlow?
     
     var body: some View {
-        switch authFlow {
-        case .quiz:
-            QuizView()
-        case .main:
-            MainTabView()
+        ZStack {
+            switch authFlow {
+            case .quiz:
+                QuizView(onFinish: { withAnimation { authFlow = .main } })
+                    .transition(.blurReplace)
+            case .main:
+                MainTabView()
+                    .transition(.blurReplace)
+            case .none:
+                ProgressView()
+            }
+        }
+        .hideKeyboardOnTapOutside()
+        .task {
+            do {
+                let preferencesExist = try await UserService.checkPreferencesExist()
+                print("Preferences exists: \(preferencesExist)")
+                withAnimation { authFlow = preferencesExist ? .main : .quiz }
+            } catch {
+                print("Failed to load user preferences: \(error)")
+                withAnimation { authFlow = .quiz }
+            }
         }
     }
 }

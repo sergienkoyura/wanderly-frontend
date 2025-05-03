@@ -9,15 +9,10 @@ import SwiftUI
 
 struct UnauthorizedView: View {
     @EnvironmentObject private var appState: AppState
-    @StateObject private var viewModel: UnauthorizedViewModel
-    
-    init() {
-        _viewModel = StateObject(wrappedValue: UnauthorizedViewModel())
-    }
+    @StateObject private var viewModel = UnauthorizedViewModel()
     
     var body: some View {
         NavigationStack {
-            
             ZStack {
                 switch viewModel.unauthFlow {
                 case .login:
@@ -49,6 +44,7 @@ struct UnauthorizedView: View {
                 viewModel.email = "sergienkoyura5@gmail.com"
                 viewModel.password = "dfgfdgdfgdfg1"
             }
+            .hideKeyboardOnTapOutside()
         }
     }
 }

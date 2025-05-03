@@ -7,26 +7,22 @@
 import Foundation
 
 enum UserService {
-    private static var baseURL: URL { ApiClient.baseURL.appendingPathComponent("preferences") }
+    private static var baseURL: URL { ApiClient.baseURL.appendingPathComponent("user") }
 
-    static func checkPreferencesExist(token: String) async throws -> Bool {
+    static func checkPreferencesExist() async throws -> Bool {
         try await ApiClient.request(
             baseURL: baseURL,
             endpoint: "exists",
-            method: "GET",
-            token: token,
-            responseType: Bool.self
+            method: "GET"
         )!
     }
 
-    static func savePreferences(token: String, prefs: UserPreferences) async throws {
-        _ = try await ApiClient.request(
+    static func savePreferences(prefs: UserPreferences) async throws {
+        let _: EmptyResponse? = try await ApiClient.request(
             baseURL: baseURL,
             endpoint: "me",
             method: "POST",
-            token: token,
-            body: prefs,
-            responseType: EmptyResponse.self
+            body: prefs
         )
     }
 }

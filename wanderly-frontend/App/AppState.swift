@@ -13,8 +13,9 @@ enum AppFlow {
     case unauthorized
 }
 
+@MainActor
 final class AppState: ObservableObject {
-    @Published var appFlow: AppFlow = .authorized
+    @Published var appFlow: AppFlow?
     @Published var isAuthenticated: Bool
     
     static let shared: AppState = AppState()
