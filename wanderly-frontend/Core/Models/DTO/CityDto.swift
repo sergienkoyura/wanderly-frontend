@@ -6,7 +6,7 @@
 //
 import Foundation
 
-struct CityResult: Identifiable, Equatable, Decodable, Encodable {
+struct CityDto: Identifiable, Equatable, Decodable, Encodable {
     var id = UUID()
     var placeId: Int = 0
     var name: String = ""

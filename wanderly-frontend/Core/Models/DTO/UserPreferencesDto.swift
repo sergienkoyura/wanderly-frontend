@@ -7,12 +7,12 @@
 
 import Foundation
 
-struct UserPreferences: Decodable, Encodable {
+struct UserPreferencesDto: Codable {
     var id: UUID? = nil
     var userId: UUID? = nil
     var name: String
     var travelType: TravelType
     var timePerRoute: Int
     var activityType: ActivityType
-    var city: CityResult
+    var city: CityDto
 }
