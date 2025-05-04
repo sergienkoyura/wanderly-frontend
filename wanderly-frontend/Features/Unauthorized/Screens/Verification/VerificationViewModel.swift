@@ -26,16 +26,16 @@ final class VerificationViewModel: ObservableObject {
     }
     
     
-    func verify() async {
+    func verify(onSuccess: () -> Void) async {
         isLoading = true
         errorMessage = nil
         
         do {
             let response = try await AuthService.verify(email: email, password: password, code: code)
             appState.login(accessToken: response.accessToken, refreshToken: response.refreshToken)
+            onSuccess()
         } catch {
             errorMessage = error.localizedDescription
-            print(error)
         }
         
         isLoading = false

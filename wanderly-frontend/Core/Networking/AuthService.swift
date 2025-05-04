@@ -41,13 +41,20 @@ enum AuthService {
     }
     
     static func refresh() async throws -> AuthResponse {
-        print("refresh token is \(TokenStorage.getRefreshToken() ?? "")")
-        return try await ApiClient.request(
+        try await ApiClient.request(
             baseURL: baseURL,
             endpoint: "refresh-token",
             method: "POST",
             body: ["refreshToken": TokenStorage.getRefreshToken() ?? ""],
             injectToken: false
+        )!
+    }
+    
+    static func me() async throws -> UserDto {
+        try await ApiClient.request(
+            baseURL: baseURL,
+            endpoint: "me",
+            method: "GET"
         )!
     }
 }

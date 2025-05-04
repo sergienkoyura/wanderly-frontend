@@ -9,7 +9,7 @@ import Foundation
 @MainActor
 final class QuizViewModel: ObservableObject {
     @Published var name: String = ""
-    @Published var city: CityResult = CityResult()
+    @Published var city: CityDto = CityDto()
     @Published var travelType: TravelType = .FOOT
     @Published var routeTime: Double = 2
     @Published var activityType: ActivityType = .COMBINED
@@ -28,7 +28,7 @@ final class QuizViewModel: ObservableObject {
         }
         
         do {
-            let prefs = UserPreferences(name: name, travelType: travelType, timePerRoute: Int(routeTime), activityType: activityType, city: city)
+            let prefs = UserPreferencesDto(name: name, travelType: travelType, timePerRoute: Int(routeTime), activityType: activityType, city: city)
             try await UserService.savePreferences(prefs: prefs)
             onSuccess()
         } catch {

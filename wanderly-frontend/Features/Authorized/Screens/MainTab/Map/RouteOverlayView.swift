@@ -1,3 +1,12 @@
+//
+//  RouteOverlayView.swift
+//  wanderly-frontend
+//
+//  Created by Yurii Serhiienko on 04.05.2025.
+//
+import MapKit
+import SwiftUI
+
 struct RouteOverlayView: UIViewRepresentable {
     let polyline: MKPolyline
 

@@ -7,19 +7,16 @@
 
 import SwiftUI
 
-enum AuthorizedFlow {
-    case quiz
-    case main
-}
-
 struct AuthorizedView: View {
-    @State var authFlow: AuthorizedFlow?
+    @StateObject private var viewModel = AuthorizedViewModel()
     
     var body: some View {
         ZStack {
-            switch authFlow {
+            switch viewModel.authFlow {
             case .quiz:
-                QuizView(onFinish: { withAnimation { authFlow = .main } })
+                QuizView(onFinish: {
+                    viewModel.completeQuiz()
+                })
                     .transition(.blurReplace)
             case .main:
                 MainTabView()
@@ -30,14 +27,7 @@ struct AuthorizedView: View {
         }
         .hideKeyboardOnTapOutside()
         .task {
-            do {
-                let preferencesExist = try await UserService.checkPreferencesExist()
-                print("Preferences exists: \(preferencesExist)")
-                withAnimation { authFlow = preferencesExist ? .main : .quiz }
-            } catch {
-                print("Failed to load user preferences: \(error)")
-                withAnimation { authFlow = .quiz }
-            }
+            await viewModel.loadUser()
         }
     }
 }

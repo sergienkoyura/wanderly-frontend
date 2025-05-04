@@ -10,6 +10,7 @@ import SwiftUI
 
 struct VerificationView: View {
     @StateObject private var viewModel: VerificationViewModel
+    @EnvironmentObject private var overviewState: OverviewState
     
     @State private var remainingSeconds = 60
     @State private var canResend = false
@@ -83,7 +84,7 @@ struct VerificationView: View {
 
     func verify() {
         Task {
-            await viewModel.verify()
+            await viewModel.verify(onSuccess: { overviewState.showToast("Verified!") })
         }
     }
 
@@ -108,4 +109,5 @@ struct VerificationView: View {
 #Preview {
     VerificationView("sergienkoyura5@gmail.com", "dfgfdgdfgdfg1")
         .environmentObject(AppState.shared)
+        .environmentObject(OverviewState.shared)
 }

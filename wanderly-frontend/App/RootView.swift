@@ -9,9 +9,10 @@
 import SwiftUI
 
 
-
 struct RootView: View {
     @EnvironmentObject private var appState: AppState
+    @EnvironmentObject private var overviewState: OverviewState
+    
     
     var body: some View {
         ZStack {
@@ -27,10 +28,26 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut, value: appState.appFlow)
+        .overlay(
+            Group {
+                if let message = OverviewState.shared.toastMessage {
+                    Text(message)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(.ultraThinMaterial)
+                        .foregroundStyle(Color(.primary))
+                        .cornerRadius(10)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .padding(.top, 60)
+                }
+            },
+            alignment: .top
+        )
     }
 }
 
 #Preview {
     RootView()
         .environmentObject(AppState.shared)
+        .environmentObject(OverviewState.shared)
 }

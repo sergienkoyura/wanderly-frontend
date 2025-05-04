@@ -10,11 +10,13 @@ import SwiftUI
 @main
 struct WanderlyApp: App {
     @StateObject private var appState = AppState.shared
+    @StateObject var overviewState = OverviewState.shared
     
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                .environmentObject(overviewState)
         }
     }
 }

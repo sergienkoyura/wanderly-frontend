@@ -9,30 +9,37 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @EnvironmentObject private var appState: AppState
+//    @StateObject private var settingsViewModel: SettingsViewModel
+//    @StateObject private var mapViewModel: MapViewModel
+//    
+//    init() {
+//        _settingsViewModel = StateObject(wrappedValue: SettingsViewModel(userDto: UserState.shared.user!, userPreferencesDto: UserState.shared.preferences!) {
+//            withAnimation {
+//                OverviewState.shared.showToast()
+//                print("show toast")
+//            }
+//        })
+//        
+//        _mapViewModel = StateObject(wrappedValue: MapViewModel(userPreferencesDto: UserState.shared.preferences!))
+//    }
     
     var body: some View {
         TabView {
-            Text("Map")      // Here later will be your MapView
-                .tabItem {
-                    Label("Map", systemImage: "map")
-                }
-            
-            Text("Stats")    // Here will be your AchievementsView
-                .tabItem {
-                    Label("Statistics", systemImage: "chart.bar")
-                }
-            
-            
-            VStack {
-                Text("Settings")
-                Button("Logout") {
-                    appState.logout()
-                }.buttonStyle(ProminentButtonStyle())
-            }
-                .tabItem {
-                    Label("Settings", systemImage: "gear")
-                }
+            MapView()
+                .tabItem { Label("Map", systemImage: "map") }
+
+            StatisticsView()
+                .tabItem { Label("Stats", systemImage: "chart.bar") }
+
+            SettingsView()
+                .tabItem { Label("Settings", systemImage: "gear") }
         }
     }
+}
+
+
+#Preview {
+    MainTabView()
+        .environmentObject(AppState.shared)
+        .environmentObject(OverviewState.shared)
 }

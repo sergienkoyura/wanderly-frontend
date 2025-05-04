@@ -17,12 +17,20 @@ enum UserService {
         )!
     }
 
-    static func savePreferences(prefs: UserPreferences) async throws {
+    static func savePreferences(prefs: UserPreferencesDto) async throws {
         let _: EmptyResponse? = try await ApiClient.request(
             baseURL: baseURL,
             endpoint: "me",
             method: "POST",
             body: prefs
         )
+    }
+    
+    static func me() async throws -> UserPreferencesDto {
+        try await ApiClient.request(
+            baseURL: baseURL,
+            endpoint: "me",
+            method: "GET"
+        )!
     }
 }

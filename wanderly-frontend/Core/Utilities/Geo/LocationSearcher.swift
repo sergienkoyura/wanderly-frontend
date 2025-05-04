@@ -6,24 +6,25 @@
 //
 import Foundation
 import SwiftUI
-
+import Combine
 
 struct NominatimCityResult: Decodable, Identifiable {
-    let place_id: Int
+    let osm_id: Int
     let display_name: String
     let lat: String
     let lon: String
     let boundingbox: [String]  // [south, north, west, east]
     
-    var id: Int { place_id }
+    var id: Int { osm_id }
     
     var cityName: String {
         display_name.components(separatedBy: ",").first ?? display_name
     }
     
-    var city: CityResult {
-        CityResult(
-            placeId: place_id,
+    var city: CityDto {
+        CityDto(
+            id: UUID(),
+            osmId: osm_id,
             name: cityName,
             details: display_name,
             latitude: Double(lat) ?? 0,
@@ -35,7 +36,20 @@ struct NominatimCityResult: Decodable, Identifiable {
 
 @MainActor
 class LocationSearcher: ObservableObject {
-    @Published var results: [CityResult] = []
+    @Published var query: String = ""
+    @Published var results: [CityDto] = []
+
+    private var cancellables = Set<AnyCancellable>()
+
+    init() {
+        $query
+            .removeDuplicates()
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [weak self] newValue in
+                Task { await self?.searchCities(query: newValue) }
+            }
+            .store(in: &cancellables)
+    }
     
     func searchCities(query: String) async {
         guard !query.isEmpty else {
@@ -44,7 +58,7 @@ class LocationSearcher: ObservableObject {
         }
         
         let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let urlString = "https://nominatim.openstreetmap.org/search?q=\(encoded)&format=json&limit=5&accept-language=en"
+        let urlString = "https://nominatim.openstreetmap.org/search?city=\(encoded)&format=json&limit=5&accept-language=en"
         
         guard let url = URL(string: urlString) else { return }
         
@@ -55,7 +69,7 @@ class LocationSearcher: ObservableObject {
             let (data, _) = try await URLSession.shared.data(for: request)
             let decoded = try JSONDecoder().decode([NominatimCityResult].self, from: data)
             results = decoded.map { $0.city }
-            print(results)
+
         } catch {
             print("Nominatim error: \(error)")
         }

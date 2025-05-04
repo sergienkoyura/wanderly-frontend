@@ -45,7 +45,6 @@ enum ApiClient {
                 throw ApiError.serverError("Token is missing")
             }
             
-            print("Access token: \(accessToken)")
             request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         }
         
@@ -63,13 +62,11 @@ enum ApiClient {
         if httpResponse.statusCode == 200 {
             return decoded.data
         }
-        print(httpResponse.statusCode)
+        print("\(httpResponse.statusCode) with an error: \(decoded.message)")
         
         // Handle expired access token
         if httpResponse.statusCode == 401, decoded.status == "error-jwt", retry {
-            print("refresh")
             if let newAuth = try? await AuthService.refresh() {
-                print("refreshed")
                 TokenStorage.saveAccessToken(newAuth.accessToken)
                 TokenStorage.saveRefreshToken(newAuth.refreshToken)
                 return try await authorizedRequest(

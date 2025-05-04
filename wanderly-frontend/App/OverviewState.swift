@@ -13,10 +13,19 @@ import SwiftUI
 class OverviewState: ObservableObject {
     @Published var toastMessage: String?
     
-    func showToast(_ message: String, duration: TimeInterval = 2) {
-        toastMessage = message
+    static let shared = OverviewState()
+    private init() {
+        
+    }
+    
+    func showToast(_ message: String = "Saved", _ duration: TimeInterval = 2) {
+        withAnimation {
+            toastMessage = message
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
-            self.toastMessage = nil
+            withAnimation {
+                self.toastMessage = nil
+               }
         }
     }
 }

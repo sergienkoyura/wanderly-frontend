@@ -38,7 +38,6 @@ struct UnauthorizedView: View {
                 }
             }
             .onAppear {
-                print("init unauthorized")
                 viewModel.unauthFlow = .login
                 
                 viewModel.email = "sergienkoyura5@gmail.com"

@@ -40,9 +40,7 @@ final class UnauthorizedViewModel: ObservableObject {
         do {
             let response = try await AuthService.login(email: email, password: password)
             appState.login(accessToken: response.accessToken, refreshToken: response.refreshToken)
-            print("logged in")
         } catch {
-            print(error)
             errorMessage = error.localizedDescription
         }
         
@@ -61,9 +59,7 @@ final class UnauthorizedViewModel: ObservableObject {
             try await AuthService.register(email: email, password: password)
             
             switchTo(flow: .verification)
-            print("sent the code")
         } catch {
-            print(error)
             errorMessage = error.localizedDescription
         }
         

@@ -13,7 +13,7 @@ struct QuizView: View {
     @StateObject private var viewModel = QuizViewModel()
     @EnvironmentObject private var appState: AppState
     
-    @FocusState private var focusedField: Field?
+    @FocusState private var isFocused: Bool
     
     var body: some View {
         VStack(spacing: 24) {
@@ -26,12 +26,12 @@ struct QuizView: View {
             
             VStack(spacing: 16) {
                 TextField("Your name", text: $viewModel.name)
-                    .focused($focusedField, equals: .name)
-                    .textFieldStyle(OutlinedTextFieldStyle(isActive: focusedField == .name, isPassword: false))
+                    .focused($isFocused)
+                    .textFieldStyle(OutlinedTextFieldStyle(isActive: isFocused, isPassword: false))
                     .textContentType(.name)
                     .autocapitalization(.words)
                     .onTapGesture {
-                        focusedField = .name
+                        isFocused = true
                     }
                 
                 AutocompleteCitySheet(city: $viewModel.city)
@@ -81,11 +81,6 @@ struct QuizView: View {
             }
             .buttonStyle(ProminentButtonStyle())
             .disabled(viewModel.isRequestingLocation)
-            
-//            Button("Logout") {
-//                appState.logout()
-//            }
-//            .buttonStyle(ProminentButtonStyle())
             
             Spacer()
         }

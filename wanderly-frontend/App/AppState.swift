@@ -18,6 +18,8 @@ final class AppState: ObservableObject {
     @Published var appFlow: AppFlow?
     @Published var isAuthenticated: Bool
     
+    @Published var currentCity: CityDto? = nil
+    
     static let shared: AppState = AppState()
     private init() {
         self.appFlow = TokenStorage.getAccessToken() != nil ? .authorized : .unauthorized

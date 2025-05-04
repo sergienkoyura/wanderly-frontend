@@ -6,7 +6,7 @@
 //
 import Foundation
 
-enum TravelType: String, CaseIterable, Decodable, Encodable {
+enum TravelType: String, CaseIterable, Codable {
     case FOOT
     case CAR
 }

@@ -6,7 +6,7 @@
 //
 import Foundation
 
-enum ActivityType: String, CaseIterable, Decodable, Encodable {
+enum ActivityType: String, CaseIterable, Codable {
     case INDOOR
     case OUTDOOR
     case COMBINED

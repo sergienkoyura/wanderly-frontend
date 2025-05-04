@@ -1,3 +1,12 @@
+//
+//  POIMarker.swift
+//  wanderly-frontend
+//
+//  Created by Yurii Serhiienko on 04.05.2025.
+//
+import MapKit
+import Foundation
+
 struct POIMarker: Identifiable {
     enum POIType {
         case greenZone
