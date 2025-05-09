@@ -8,7 +8,7 @@ import Foundation
 import MapKit
 
 struct CityDto: Identifiable, Equatable, Codable {
-    var id: UUID? = nil
+    var id: UUID = UUID()
     var osmId: Int = 0
     var name: String = ""
     var details: String = ""
@@ -30,6 +30,11 @@ extension CityDto {
             latitude: latitude,
             longitude: longitude
         )
+        
+//        let center = CLLocationCoordinate2D(
+//               latitude: (north + south) / 2,
+//               longitude: (east + west) / 2
+//           )
         
         let span = MKCoordinateSpan(
             latitudeDelta: abs(north - south),

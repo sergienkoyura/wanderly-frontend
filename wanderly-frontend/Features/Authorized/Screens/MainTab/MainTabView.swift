@@ -9,20 +9,6 @@
 import SwiftUI
 
 struct MainTabView: View {
-//    @StateObject private var settingsViewModel: SettingsViewModel
-//    @StateObject private var mapViewModel: MapViewModel
-//    
-//    init() {
-//        _settingsViewModel = StateObject(wrappedValue: SettingsViewModel(userDto: UserState.shared.user!, userPreferencesDto: UserState.shared.preferences!) {
-//            withAnimation {
-//                OverviewState.shared.showToast()
-//                print("show toast")
-//            }
-//        })
-//        
-//        _mapViewModel = StateObject(wrappedValue: MapViewModel(userPreferencesDto: UserState.shared.preferences!))
-//    }
-    
     var body: some View {
         TabView {
             MapView()

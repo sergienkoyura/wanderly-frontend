@@ -28,9 +28,15 @@ final class QuizViewModel: ObservableObject {
         }
         
         do {
-            let prefs = UserPreferencesDto(name: name, travelType: travelType, timePerRoute: Int(routeTime), activityType: activityType, city: city)
-            try await UserService.savePreferences(prefs: prefs)
+            let userProfile = UserProfileDto(name: name, avatarName: "AVATAR_1")
+            let userPreferences = UserPreferencesDto(travelType: travelType, timePerRoute: Int(routeTime), activityType: activityType, city: city)
+            try await UserService.saveUserProfile(profile: userProfile)
+            
+            
+            AppState.shared.currentUserProfile = userProfile
+            AppState.shared.currentUserPreferences = try await GeoService.saveUserPreferences(prefs: userPreferences)
             onSuccess()
+            
         } catch {
             errorMessage = error.localizedDescription
         }

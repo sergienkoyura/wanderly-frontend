@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct UnauthorizedView: View {
-    @EnvironmentObject private var appState: AppState
     @StateObject private var viewModel = UnauthorizedViewModel()
     
     var body: some View {
@@ -22,7 +21,7 @@ struct UnauthorizedView: View {
                     RegisterView(viewModel: viewModel)
                         .transition(.blurReplace)
                 case .verification:
-                    VerificationView(viewModel.email, viewModel.password)
+                    VerificationView(viewModel: viewModel)
                         .transition(.move(edge: .trailing))
                 }
             }
@@ -51,4 +50,5 @@ struct UnauthorizedView: View {
 #Preview {
     UnauthorizedView()
         .environmentObject(AppState.shared)
+        .environmentObject(OverviewState.shared)
 }

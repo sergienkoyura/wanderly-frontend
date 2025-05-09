@@ -19,19 +19,16 @@ final class UnauthorizedViewModel: ObservableObject {
     
     @Published var email: String = ""
     @Published var password: String = ""
+    @Published var code: String = ""
     
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-
-    private let appState: AppState
     
-    init(appState: AppState = .shared) {
-        self.appState = appState
-    }
-    
-    func login() async {
+    func login(onSuccess: @escaping (String, String) -> Void) async {
         isLoading = true
         errorMessage = nil
+        
+        defer { isLoading = false }
         
         guard validateInputs() else {
             return
@@ -39,17 +36,17 @@ final class UnauthorizedViewModel: ObservableObject {
         
         do {
             let response = try await AuthService.login(email: email, password: password)
-            appState.login(accessToken: response.accessToken, refreshToken: response.refreshToken)
+            onSuccess(response.accessToken, response.refreshToken)
         } catch {
             errorMessage = error.localizedDescription
         }
-        
-        isLoading = false
     }
     
     func register() async {
         isLoading = true
         errorMessage = nil
+        
+        defer { isLoading = false }
         
         guard validateInputs() else {
             return
@@ -62,9 +59,35 @@ final class UnauthorizedViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+    
+    func verify(onSuccess: @escaping (String, String) -> Void) async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            let response = try await AuthService.verify(email: email, password: password, code: code)
+            onSuccess(response.accessToken, response.refreshToken)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
         
         isLoading = false
     }
+    
+    func resendCode() async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            try await AuthService.register(email: email, password: password)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        
+        isLoading = false
+    }
+    
     
     func switchTo(flow: UnauthorizedFlow) {
         withAnimation {

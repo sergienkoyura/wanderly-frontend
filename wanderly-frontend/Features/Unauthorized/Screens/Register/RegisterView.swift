@@ -135,8 +135,3 @@ struct RegisterView: View {
         }
     }
 }
-
-#Preview {
-    RegisterView(viewModel: UnauthorizedViewModel())
-        .environmentObject(AppState.shared)
-}

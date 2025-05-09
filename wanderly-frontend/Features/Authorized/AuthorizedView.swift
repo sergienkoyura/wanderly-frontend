@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct AuthorizedView: View {
+    @EnvironmentObject var appState: AppState
     @StateObject private var viewModel = AuthorizedViewModel()
     
     var body: some View {
@@ -27,11 +28,16 @@ struct AuthorizedView: View {
         }
         .hideKeyboardOnTapOutside()
         .task {
-            await viewModel.loadUser()
+            await viewModel.loadUser() { user, userProfile, userPreferences in
+                appState.currentUser = user
+                appState.currentUserProfile = userProfile
+                appState.currentUserPreferences = userPreferences
+            }
         }
     }
 }
 
 #Preview {
     AuthorizedView()
+        .environmentObject(AppState.shared)
 }

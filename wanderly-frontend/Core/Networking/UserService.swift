@@ -9,28 +9,29 @@ import Foundation
 enum UserService {
     private static var baseURL: URL { ApiClient.baseURL.appendingPathComponent("user") }
 
-    static func checkPreferencesExist() async throws -> Bool {
-        try await ApiClient.request(
-            baseURL: baseURL,
-            endpoint: "exists",
-            method: "GET"
-        )!
-    }
-
-    static func savePreferences(prefs: UserPreferencesDto) async throws {
+    static func saveUserProfile(profile: UserProfileDto) async throws {
         let _: EmptyResponse? = try await ApiClient.request(
             baseURL: baseURL,
             endpoint: "me",
             method: "POST",
-            body: prefs
+            body: profile
         )
     }
     
-    static func me() async throws -> UserPreferencesDto {
+    static func getUserProfile() async throws -> UserProfileDto {
         try await ApiClient.request(
             baseURL: baseURL,
             endpoint: "me",
             method: "GET"
         )!
+    }
+    
+    static func completeRoute(completion: UserRouteCompletionDto) async throws {
+        let _: EmptyResponse? = try await ApiClient.request(
+            baseURL: baseURL,
+            endpoint: "completions/routes",
+            method: "POST",
+            body: completion
+        )
     }
 }

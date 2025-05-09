@@ -15,28 +15,34 @@ class SettingsViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     @Published var userDto: UserDto?
+    @Published var userProfileDto: UserProfileDto?
     @Published var userPreferencesDto: UserPreferencesDto?
     
     private var firstLoad = false;
     
     func load() async {
-        guard !firstLoad else { return }
-        firstLoad = true;
+//        guard !firstLoad else { return }
+//        firstLoad = true;
         
-        isLoading = true;
-        defer { isLoading = false }
-        
+//        isLoading = true;
+//        defer { isLoading = false }
+//        
         print("loading user data...")
         
-        do {
-            userDto = try await AuthService.me()
-            userPreferencesDto = try await UserService.me()
-        } catch {
-            self.errorMessage = "Failed to load user data"
-            print("Load error: \(error)")
+//        do {
+//            userDto = try await AuthService.me()
+//            userPreferencesDto = try await UserService.me()
+//        } catch {
+//            self.errorMessage = "Failed to load user data"
+//            print("Load error: \(error)")
             
-            userPreferencesDto = nil
-        }
+//            userPreferencesDto = nil
+//        }
+        
+        
+        userDto = AppState.shared.currentUser
+        userProfileDto = AppState.shared.currentUserProfile
+        userPreferencesDto = AppState.shared.currentUserPreferences
     }
 
     func savePreferences() async {
@@ -44,8 +50,8 @@ class SettingsViewModel: ObservableObject {
         defer { isSaving = false }
         
         do {
-            try await UserService.savePreferences(prefs: userPreferencesDto!)
-            AppState.shared.currentCity = userPreferencesDto?.city
+            
+            AppState.shared.currentUserPreferences = try await GeoService.saveUserPreferences(prefs: userPreferencesDto!)
             OverviewState.shared.showToast()
         } catch {
             self.errorMessage = "Failed to save preferences"

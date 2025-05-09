@@ -14,8 +14,8 @@ struct SettingsView: View {
     
     var body: some View {
         ZStack {
-            if let user = viewModel.userDto, let prefs = viewModel.userPreferencesDto {
-                content(user: user, prefs: prefs)
+            if let user = viewModel.userDto, let profile = viewModel.userProfileDto, let prefs = viewModel.userPreferencesDto {
+                content(user: user, profile: profile, prefs: prefs)
             } else {
                 ProgressView()
             }
@@ -26,10 +26,10 @@ struct SettingsView: View {
     }
     
     @ViewBuilder
-    private func content(user: UserDto, prefs: UserPreferencesDto) -> some View {
+    private func content(user: UserDto, profile: UserProfileDto, prefs: UserPreferencesDto) -> some View {
         ScrollView {
             VStack(spacing: 24) {
-                Text("Hi, \(prefs.name)")
+                Text("Hi, \(profile.name)")
                     .font(.title)
                     .bold()
                     .foregroundColor(Color(.primary))

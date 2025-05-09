@@ -15,14 +15,20 @@ enum AuthorizedFlow {
 final class AuthorizedViewModel: ObservableObject {
     @Published var authFlow: AuthorizedFlow?
     
-    func loadUser() async {
+    func loadUser(onSuccess: @escaping (UserDto, UserProfileDto, UserPreferencesDto) -> Void) async {
         do {
-            let hasPreferences = try await UserService.checkPreferencesExist()
+            let user = try await AuthService.getUser()
+            let userProfile = try await UserService.getUserProfile()
+            let userPreferences = try await GeoService.getUserPreferences()
             withAnimation {
-                authFlow = hasPreferences ? .main : .quiz
+                authFlow = .main
             }
+            onSuccess(user, userProfile, userPreferences)
         } catch {
             print("Error loading user: \(error)")
+            withAnimation {
+                authFlow = .quiz
+            }
         }
     }
 

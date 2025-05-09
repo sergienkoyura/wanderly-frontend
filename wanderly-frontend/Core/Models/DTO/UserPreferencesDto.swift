@@ -7,10 +7,7 @@
 
 import Foundation
 
-struct UserPreferencesDto: Codable {
-    var id: UUID? = nil
-    var userId: UUID? = nil
-    var name: String
+struct UserPreferencesDto: Codable, Equatable {
     var travelType: TravelType
     var timePerRoute: Int
     var activityType: ActivityType

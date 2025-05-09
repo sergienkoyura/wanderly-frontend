@@ -34,9 +34,9 @@ struct RootView: View {
                     Text(message)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 12)
-                        .background(.ultraThinMaterial)
+                        .background(.thinMaterial)
                         .foregroundStyle(Color(.primary))
-                        .cornerRadius(10)
+                        .cornerRadius(8)
                         .transition(.move(edge: .top).combined(with: .opacity))
                         .padding(.top, 60)
                 }

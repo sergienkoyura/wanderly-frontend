@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct LoginView: View {
+    @EnvironmentObject private var appState: AppState
     @ObservedObject var viewModel: UnauthorizedViewModel
     
     @State private var isPasswordVisible = false
@@ -120,12 +121,9 @@ struct LoginView: View {
     
     func submit() {
         Task {
-            await viewModel.login()
+            await viewModel.login() { access, refresh in
+                appState.login(accessToken: access, refreshToken: refresh)
+            }
         }
     }
-}
-
-#Preview {
-    RegisterView(viewModel: UnauthorizedViewModel())
-        .environmentObject(AppState.shared)
 }

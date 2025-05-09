@@ -18,7 +18,9 @@ final class AppState: ObservableObject {
     @Published var appFlow: AppFlow?
     @Published var isAuthenticated: Bool
     
-    @Published var currentCity: CityDto? = nil
+    @Published var currentUser: UserDto? = nil
+    @Published var currentUserProfile: UserProfileDto? = nil
+    @Published var currentUserPreferences: UserPreferencesDto? = nil
     
     static let shared: AppState = AppState()
     private init() {
@@ -42,5 +44,9 @@ final class AppState: ObservableObject {
             appFlow = .unauthorized
             isAuthenticated = false
         }
+        
+        currentUser = nil
+        currentUserProfile = nil
+        currentUserPreferences = nil
     }
 }

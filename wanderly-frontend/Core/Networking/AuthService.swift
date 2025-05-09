@@ -50,7 +50,7 @@ enum AuthService {
         )!
     }
     
-    static func me() async throws -> UserDto {
+    static func getUser() async throws -> UserDto {
         try await ApiClient.request(
             baseURL: baseURL,
             endpoint: "me",

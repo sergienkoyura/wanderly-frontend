@@ -9,17 +9,14 @@
 import SwiftUI
 
 struct VerificationView: View {
-    @StateObject private var viewModel: VerificationViewModel
-    @EnvironmentObject private var overviewState: OverviewState
+    @EnvironmentObject var appState: AppState
+    
+    @ObservedObject var viewModel: UnauthorizedViewModel
     
     @State private var remainingSeconds = 60
     @State private var canResend = false
     
     @FocusState private var isFocused: Bool
-    
-    init(_ email: String, _ password: String) {
-        _viewModel = StateObject(wrappedValue: VerificationViewModel(email, password))
-    }
 
     var body: some View {
         VStack(spacing: 24) {
@@ -84,15 +81,21 @@ struct VerificationView: View {
 
     func verify() {
         Task {
-            await viewModel.verify(onSuccess: { overviewState.showToast("Verified!") })
+            await viewModel.verify() { access, refresh in
+                OverviewState.shared.showToast("Verified!")
+                appState.login(accessToken: access, refreshToken: refresh)
+            }
         }
     }
 
     func resend() {
         // TODO: Call API to resend code
-        remainingSeconds = 60
-        canResend = false
-        startTimer()
+        Task {
+            await viewModel.register()
+            remainingSeconds = 60
+            canResend = false
+            startTimer()
+        }
     }
 
     func startTimer() {
@@ -107,7 +110,7 @@ struct VerificationView: View {
 }
 
 #Preview {
-    VerificationView("sergienkoyura5@gmail.com", "dfgfdgdfgdfg1")
+    VerificationView(viewModel: UnauthorizedViewModel())
         .environmentObject(AppState.shared)
         .environmentObject(OverviewState.shared)
 }
