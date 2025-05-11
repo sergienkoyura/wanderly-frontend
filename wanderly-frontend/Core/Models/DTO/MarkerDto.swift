@@ -62,5 +62,11 @@ extension MarkerDto {
         default: return "mappin"
         }
     }
+    
+    var formattedTag: String {
+        tag
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+    }
 }
 

@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		94CC7ECC2DD034D00076574F /* golden_coin.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 94CC7ECB2DD034D00076574F /* golden_coin.usdz */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		94129DFE2DC10CD700DD2089 /* wanderly-frontend.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "wanderly-frontend.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		94CC7ECB2DD034D00076574F /* golden_coin.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = golden_coin.usdz; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -47,6 +52,7 @@
 			children = (
 				94129E002DC10CD700DD2089 /* wanderly-frontend */,
 				94129DFF2DC10CD700DD2089 /* Products */,
+				94CC7ECB2DD034D00076574F /* golden_coin.usdz */,
 			);
 			sourceTree = "<group>";
 		};
@@ -122,6 +128,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				94CC7ECC2DD034D00076574F /* golden_coin.usdz in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -272,6 +279,8 @@
 				INFOPLIST_FILE = "wanderly-frontend/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Wanderly;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to show AR content";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is needed to detect the city automatically.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -307,6 +316,8 @@
 				INFOPLIST_FILE = "wanderly-frontend/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Wanderly;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to show AR content";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is needed to detect the city automatically.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

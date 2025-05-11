@@ -10,32 +10,38 @@ import MapKit
 
 enum MapDisplayMode: String, CaseIterable {
     case markersOnly
-    case routesOnlyWithMarkers
     case routesOnlyWithNumbers
-    case markersAndRoutes
+    case arModels
+    case completeMap
 }
 
 struct MapView: View {
     @EnvironmentObject private var appState: AppState
     @StateObject var viewModel = MapViewModel()
     
-    @State private var displayMode: MapDisplayMode = .markersAndRoutes
+    @State private var displayMode: MapDisplayMode = .routesOnlyWithNumbers
     @State private var showDropdown = false
     
     @State private var selectedRouteIndex: Int? = nil
     @State private var selectedMarkerIndex: Int = 0
     
     @State private var isPlayingRoute = false
+    @State private var focusMode = false
+    
+    @State private var hasEdited = false
+    
+    @State private var isShowingARCamera = false
+
     
     var displayTitle: String {
         switch displayMode {
         case .markersOnly:
-            return "Markers Only"
-        case .routesOnlyWithMarkers:
-            return "Routes Preview"
+            return "Markers"
         case .routesOnlyWithNumbers:
             return "Routes"
-        case .markersAndRoutes:
+        case .arModels:
+            return "Models"
+        case .completeMap:
             return "Complete map"
         }
     }
@@ -45,12 +51,17 @@ struct MapView: View {
             if let bounds = viewModel.cameraBounds, !viewModel.isLoading {
                 ZStack {
                     Map(position: $viewModel.cameraPos, bounds: bounds, interactionModes: [.all], ) {
-                        if displayMode != .routesOnlyWithMarkers && displayMode != .routesOnlyWithNumbers {
+                        switch displayMode {
+                        case .markersOnly:
                             markers()
-                        }
-                        
-                        if displayMode != .markersOnly {
+                        case .routesOnlyWithNumbers:
                             routes()
+                        case .arModels:
+                            arZones()
+                        case .completeMap:
+                            markers()
+                            routes()
+                            arZones()
                         }
                     }
                     .mapStyle(.standard(elevation: .flat, pointsOfInterest: .including(), showsTraffic: false))
@@ -79,51 +90,55 @@ struct MapView: View {
                 ProgressView()
             }
         }
-        .sheet(item: $viewModel.selectedDrawnRoute) { selected in
-            VStack(spacing: 16) {
-                Text("Route Details").font(.title2).bold()
-                Text("Distance: \((selected.totalDistance / 1000).formatted(.number.precision(.fractionLength(2)))) km")
-                let totalMinutes = Int((selected.expectedTravelTime / 60).rounded()) + selected.route.avgStayingTime
-                Text("Estimated Time: \(totalMinutes) min")
-                Text("Travel Time: \(Int((selected.expectedTravelTime / 60).rounded())) min")
-                Text("Staying Time: \(selected.route.avgStayingTime) min")
-                Text("Counted Time: \(selected.route.avgTime) min")
-                Button("Close") {
-                    viewModel.selectedDrawnRoute = nil
+        .sheet(item: $viewModel.selectedRouteForInfo, onDismiss: {
+            hasEdited = false
+        }) { route in
+            RouteInfoSheet(
+                route: route,
+                reorderedMarkers: $viewModel.selectedRouteReorderedMarkers,
+                routeIndex: selectedRouteIndex ?? 0,
+                hasEdited: $hasEdited,
+                onClose: {
+                    viewModel.selectedRouteForInfo = nil
+                },
+                onRegenerate: {
+                    await viewModel.saveEditedRoute()
+                    viewModel.selectedRouteForInfo = nil
+                },
+                onBranch: { markerIndex in
+                    await viewModel.branchRoute(routeId: route.route.id, from: markerIndex)
+                    viewModel.selectedRouteForInfo = nil
                 }
+            )
+            .onAppear {
+                viewModel.selectedRouteReorderedMarkers = route.route.markers
             }
-            .padding()
+            .interactiveDismissDisabled()
         }
-        .sheet(item: $viewModel.selectedMarker) { selected in
-            VStack(spacing: 16) {
-                Text("Marker Details").font(.title2).bold()
-                Text("Name: \(selected.name)")
-                Text("Category: \(selected.category)")
-                Text("Tag: \(selected.tag)")
-                Text("Order: \(selected.orderIndex ?? 0)")
-                Text("Staying time: \(selected.stayingTime ?? 0) min")
-                Text("Rating: \(selected.rating.formatted(.number.precision(.fractionLength(2)))) ⭐️")
-                Button("Close") {
-                    viewModel.selectedMarker = nil
+        .sheet(isPresented: $isShowingARCamera) {
+            if let model = viewModel.selectedARModel {
+                ARVerificationView(code: model.code) {
+                    // call backend to verify here (e.g., via `viewModel.verifyARModel(id:)`)
+                    await viewModel.markModelAsCompleted()
+                    isShowingARCamera = false
                 }
             }
-            .padding()
         }
         .onChange(of: appState.currentUserPreferences) { _, newPreferences in
             if let city = newPreferences?.city {
                 viewModel.updateCamera(to: city)
                 Task {
                     await viewModel.load()
+                    selectedRouteIndex = nil
+                    selectedMarkerIndex = 0
+                    focusMode = false
+                    isPlayingRoute = false
                 }
             }
         }
         .onChange(of: displayMode) {_, _ in
             OverviewState.shared.showToast(displayTitle)
         }
-        
-        //        .task {
-        //            await viewModel.initialLoad()
-        //        }
     }
     
     @MapContentBuilder
@@ -138,22 +153,15 @@ struct MapView: View {
     
     @MapContentBuilder
     public func routes() -> some MapContent {
-        ForEach(viewModel.drawnRoutesPerCity, id: \.route.id) { route in
-            MapPolyline(coordinates: route.polyline.coordinates)
-                .stroke(route.color, lineWidth: 4)
+        ForEach(viewModel.drawnRoutesPerCity.indices, id: \.self) { routeIndex in
+            let route = viewModel.drawnRoutesPerCity[routeIndex]
             
-            if displayMode == .routesOnlyWithMarkers {
-                
-                ForEach(route.route.markers, id: \.id) { marker in
-                    Marker("\(marker.name) (\(marker.orderIndex ?? 0))", systemImage: marker.getIcon(),
-                           coordinate: CLLocationCoordinate2D(latitude: marker.latitude, longitude: marker.longitude))
-                    .tint(route.color)
-                }
-            } else {
-                //                routeInteractions(for: route)
-                routeArrows(for: route)
+            if (!isPlayingRoute && !focusMode || (isPlayingRoute || focusMode) && viewModel.drawnRoutesPerCity[selectedRouteIndex ?? 0].route.id == route.route.id) {
+                MapPolyline(coordinates: route.polyline.coordinates)
+                    .stroke(route.color, lineWidth: 4)
                 
                 let visitedUntil = viewModel.visitedMarkerIndices[route.route.id] ?? -1
+                routeArrows(for: route)
                 
                 ForEach(route.route.markers.indices, id: \.self) { i in
                     let marker = route.route.markers[i]
@@ -161,7 +169,9 @@ struct MapView: View {
                     
                     Annotation(marker.name, coordinate: coordinate) {
                         Button {
-                            viewModel.selectedMarker = marker
+                            selectedRouteIndex = routeIndex
+                            selectedMarkerIndex = i
+                            viewModel.scrollToMarker(in: routeIndex, markerIndex: selectedMarkerIndex)
                         } label: {
                             ZStack {
                                 Circle()
@@ -177,6 +187,7 @@ struct MapView: View {
                             .zIndex(10)
                         }
                     }
+                    
                 }
             }
         }
@@ -189,93 +200,97 @@ struct MapView: View {
         let arrowCoordinates = route.polyline.coordinates.sample(every: 20)
         
         ForEach(Array(arrowCoordinates.enumerated()), id: \.offset) { index, pair in
-            if index % 2 == 1 {
-                let start = pair.0
-                let end = pair.1
-                let angle = start.bearing(to: end)
-                let midPoint = start.midpoint(with: end)
-                Annotation("", coordinate: midPoint) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(route.color)
-                            .frame(width: 15, height: 25)
-                            .rotationEffect(.degrees(angle))
-                        
-                        Image(systemName: "arrowshape.up.fill")
-                            .foregroundColor(.white)
-                            .font(.caption)
-                            .rotationEffect(.degrees(angle))
-                    }
-                    .zIndex(0)
-                }}
+            let start = pair.0
+            let end = pair.1
+            let angle = start.bearing(to: end)
+            let midPoint = start.midpoint(with: end)
+            Annotation("", coordinate: midPoint) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(route.color)
+                        .frame(width: 15, height: 25)
+                        .rotationEffect(.degrees(angle))
+                    
+                    Image(systemName: "arrowshape.up.fill")
+                        .foregroundColor(.white)
+                        .font(.caption)
+                        .rotationEffect(.degrees(angle))
+                }
+                .zIndex(0)
+            }
         }
         .annotationTitles(.hidden)
     }
     
-    
     @MapContentBuilder
-    public func routeInteractions(for route: RouteDrawable) -> some MapContent {
-        
-        let interactionCoordinates = route.polyline.coordinates.sample(every: 20)
-        
-        ForEach(Array(interactionCoordinates.enumerated()), id: \.offset) { index, pair in
-            if index % 2 == 0 {
-                let start = pair.0
-                let end = pair.1
-                let midPoint = start.midpoint(with: end)
-                Annotation("", coordinate: midPoint) {
-                    Button {
-                        viewModel.selectedDrawnRoute = route
+    public func arZones() -> some MapContent {
+        ForEach(viewModel.modelsPerCity) { model in
+            
+            let center = CLLocationCoordinate2D(latitude: model.latitude, longitude: model.longitude)
+            
+            MapCircle(center: center, radius: 150) // radius is in meters; 150m radius = 300m diameter
+                .foregroundStyle(
+                    model.completed ?? false ? .gray.opacity(0.4) : Color.accentColor.opacity(0.4)
+                )
+            if !(model.completed ?? false) {
+                Annotation("", coordinate: center) {
+                    Button{
+                        viewModel.selectedARModel = model
+                        isShowingARCamera = true
                     } label: {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(route.color)
-                                .frame(width: 30, height: 20)
-                            
-                            Image(systemName: "rectangle.and.text.magnifyingglass.rtl")
-                                .foregroundColor(.white)
-                                .font(.caption)
-                        }
-                        .zIndex(0)
+                        Label("AR Zone", systemImage: "arkit")
+                            .padding(8)
+                            .background(.thinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
-                }}
+                }
+            }
         }
-        .annotationTitles(.hidden)
-        
     }
     
     @ViewBuilder
     public func menu() -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Button {
-                switch displayMode {
-                case .markersOnly:
-                    displayMode = .routesOnlyWithMarkers
-                case .routesOnlyWithMarkers:
-                    displayMode = .routesOnlyWithNumbers
-                case .routesOnlyWithNumbers:
-                    displayMode = .markersAndRoutes
-                    selectedRouteIndex = nil
-                    selectedMarkerIndex = 0
-                case .markersAndRoutes:
-                    displayMode = .markersOnly
+            if !isPlayingRoute {
+                Button {
+                    switch displayMode {
+                    case .markersOnly:
+                        displayMode = .routesOnlyWithNumbers
+                    case .routesOnlyWithNumbers:
+                        displayMode = .arModels
+                        selectedRouteIndex = nil
+                        selectedMarkerIndex = 0
+                        focusMode = false
+                    case .arModels:
+                        displayMode = .completeMap
+                    case .completeMap:
+                        displayMode = .markersOnly
+                    }
+                } label: {
+                    Image(systemName: "paintbrush.fill")
+                        .dropdownImageStyle()
                 }
-            } label: {
-                Image(systemName: "paintbrush.fill")
-                    .dropdownImageStyle()
-            }
-            .mapDropdownStyle()
-            
-            Button {
-                Task {
-                    //                                        await viewModel.generateNewRoute()
+                .mapDropdownStyle()
+                
+                Button {
+                    Task {
+                        await viewModel.addRoute()
+                    }
+                    showDropdown = false
+                } label: {
+                    if viewModel.isRouteLoading {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .frame(width: 20, height: 20)
+                    } else {
+                        Image(systemName: "plus")
+                            .dropdownImageStyle()
+                    }
                 }
-                showDropdown = false
-            } label: {
-                Image(systemName: "plus")
-                    .dropdownImageStyle()
+                .disabled(viewModel.isRouteLoading)
+                .mapDropdownStyle()
+                
             }
-            .mapDropdownStyle()
             
             Button {
                 Task {
@@ -312,8 +327,6 @@ struct MapView: View {
     @ViewBuilder
     private func routeControlBar() -> some View {
         HStack(spacing: 16) {
-            // [existing route selection + chevrons + ellipsis]
-            
             Menu {
                 ForEach(viewModel.drawnRoutesPerCity.indices, id: \.self) { index in
                     Button {
@@ -330,6 +343,15 @@ struct MapView: View {
             }
             
             Spacer()
+            
+            Button {
+                focusMode.toggle()
+            } label: {
+                Image(systemName: focusMode ? "eye.slash" : "eye")
+                    .dropdownImageStyle()
+            }
+            .frame(width: 50, height: 45)
+            .disabled(selectedRouteIndex == nil)
             
             Button {
                 if let index = selectedRouteIndex {
@@ -354,19 +376,37 @@ struct MapView: View {
             .frame(width: 45, height: 45)
             .disabled(selectedRouteIndex == nil || viewModel.drawnRoutesPerCity[selectedRouteIndex!].route.markers.count - 1 == selectedMarkerIndex)
             
-            Menu {
-                Button("Play") {
-                    withAnimation {
-                        isPlayingRoute = true
+            
+            if let index = selectedRouteIndex {
+                let currentRoute = viewModel.drawnRoutesPerCity[index].route
+                let completed = viewModel.visitedMarkerIndices[currentRoute.id] == viewModel.visitingMarkerIndices[currentRoute.id]
+                Menu {
+                    Button(completed ? "Completed" : "Play") {
+                        withAnimation {
+                            isPlayingRoute = true
+                            viewModel.scrollToMarker(in: index, markerIndex: viewModel.visitingMarkerIndices[currentRoute.id] ?? 0)
+                        }
+                    }.disabled(completed)
+                    Button("Info") {
+                        if let index = selectedRouteIndex {
+                            viewModel.selectedRouteForInfo = viewModel.drawnRoutesPerCity[index]
+                        }
                     }
+                    Button("Delete", role: .destructive) {
+                        Task {
+                            selectedRouteIndex = nil
+                            selectedMarkerIndex = 0
+                            focusMode = false
+                            
+                            await viewModel.deleteRoute(routeId: currentRoute.id)
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis").dropdownImageStyle()
                 }
-                Button("Info") { /* TBD */ }
-                Button("Delete", role: .destructive) { /* TBD */ }
-            } label: {
-                Image(systemName: "ellipsis").dropdownImageStyle()
+                .frame(width: 45, height: 45)
+                .disabled(selectedRouteIndex == nil)
             }
-            .frame(width: 45, height: 45)
-            .disabled(selectedRouteIndex == nil)
         }
         .padding(.vertical, 8)
         .background(.thickMaterial)
@@ -380,9 +420,9 @@ struct MapView: View {
         HStack(spacing: 16) {
             // Route name (left)
             Text("Route \(selectedRouteIndex.map { $0 + 1 } ?? 0)")
-
+            
             Spacer()
-
+            
             // Pause button
             Button {
                 withAnimation {
@@ -392,28 +432,35 @@ struct MapView: View {
                 Image(systemName: "pause.fill").dropdownImageStyle()
             }
             .frame(width: 45, height: 45)
-
+            
             // Next / Finish button
-            Button {
-                if let index = selectedRouteIndex {
-                    let markerCount = viewModel.drawnRoutesPerCity[index].route.markers.count
-                    if selectedMarkerIndex == markerCount - 1 {
-                        // finish logic here
-                        isPlayingRoute = false
-                    } else {
-                        let routeId = viewModel.drawnRoutesPerCity[index].route.id
-                        viewModel.visitedMarkerIndices[routeId] = selectedMarkerIndex
+            if let routeIndex = selectedRouteIndex {
+                let routeId = viewModel.drawnRoutesPerCity[routeIndex].route.id
+                if let visitingIndex = viewModel.visitingMarkerIndices[routeId] {
+                    Button {
+                        let markerCount = viewModel.drawnRoutesPerCity[routeIndex].route.markers.count
                         
-                        selectedMarkerIndex += 1
-                        viewModel.scrollToMarker(in: index, markerIndex: selectedMarkerIndex)
-                    }
+                        if visitingIndex == markerCount - 1 {
+                            isPlayingRoute = false
+                            viewModel.scrollToMarker(in: routeIndex, markerIndex: visitingIndex, distance: 3500)
+                            
+                            viewModel.visitedMarkerIndices[routeId] = visitingIndex
+                            viewModel.saveRouteCompletion(routeId: routeId, step: visitingIndex, status: .DONE)
+                        } else {
+                            viewModel.visitedMarkerIndices[routeId] = visitingIndex
+                            viewModel.saveRouteCompletion(routeId: routeId, step: visitingIndex)
+                            
+                            viewModel.visitingMarkerIndices[routeId] = visitingIndex + 1
+                            viewModel.scrollToMarker(in: routeIndex, markerIndex: visitingIndex + 1)
+                        }
+                        
+                    } label: {
+                        Text(viewModel.visitingMarkerIndices[routeId] == (selectedRouteIndex.map { viewModel.drawnRoutesPerCity[$0].route.markers.count - 1 } ?? 0) ? "Finish" : "Next")
+                            .bold()
+                            .padding(8)
+                            .background(RoundedRectangle(cornerRadius: 8).fill(Color.accentColor))
+                    }.foregroundColor(.white)
                 }
-            } label: {
-                Text(selectedMarkerIndex == (selectedRouteIndex.map { viewModel.drawnRoutesPerCity[$0].route.markers.count - 1 } ?? 0) ? "Finish" : "Next")
-                    .bold()
-                    .padding(8)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.accentColor))
-                    .foregroundColor(.white)
             }
         }
         .padding(.vertical, 8)
@@ -423,7 +470,7 @@ struct MapView: View {
         .padding(.horizontal, 8)
         .padding(.bottom, 32)
     }
-
+    
 }
 
 //#Preview {

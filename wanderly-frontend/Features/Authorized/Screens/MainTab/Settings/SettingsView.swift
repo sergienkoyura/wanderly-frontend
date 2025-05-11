@@ -150,6 +150,6 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView()
+    AuthorizedView()
         .environmentObject(AppState.shared)
 }

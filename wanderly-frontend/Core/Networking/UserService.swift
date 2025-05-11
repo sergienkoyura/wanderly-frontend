@@ -26,12 +26,28 @@ enum UserService {
         )!
     }
     
-    static func completeRoute(completion: UserRouteCompletionDto) async throws {
+    static func getCompletionByRouteId(routeId: UUID) async throws -> UserRouteCompletionDto {
+        try await ApiClient.request(
+            baseURL: baseURL,
+            endpoint: "completions/routes/\(routeId)",
+            method: "GET"
+        )!
+    }
+    
+    static func saveRouteCompletion(completion: UserRouteCompletionDto) async throws {
         let _: EmptyResponse? = try await ApiClient.request(
             baseURL: baseURL,
             endpoint: "completions/routes",
             method: "POST",
             body: completion
         )
+    }
+    
+    static func getCompletionByModelId(modelId: UUID) async throws -> Bool {
+        try await ApiClient.request(
+            baseURL: baseURL,
+            endpoint: "completions/ar-models/\(modelId)",
+            method: "GET"
+        )!
     }
 }

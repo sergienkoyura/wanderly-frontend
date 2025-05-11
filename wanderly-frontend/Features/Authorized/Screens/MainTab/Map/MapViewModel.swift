@@ -12,11 +12,11 @@ import CoreLocation
 @MainActor
 final class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var markersPerCity: [MarkerDto] = []
+    @Published var modelsPerCity: [ARModelDto] = []
     @Published var routesPerCity: [RouteDto] = []
     @Published var drawnRoutesPerCity: [RouteDrawable] = []
-    @Published var selectedDrawnRoute: RouteDrawable?
-    @Published var selectedMarker: MarkerDto?
     
+    @Published var visitingMarkerIndices: [UUID: Int] = [:]
     @Published var visitedMarkerIndices: [UUID: Int] = [:]
     
     @Published var travelAdvice: TravelAdvice?
@@ -26,6 +26,13 @@ final class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate 
     @Published var isLoading = false
     @Published var errorMessage: String?
     private var hasLoadedOnce = false
+    
+    @Published var isRouteLoading = false
+    @Published var selectedRouteForInfo: RouteDrawable?
+    @Published var selectedRouteReorderedMarkers: [MarkerDto] = []
+    
+    @Published var selectedARModel: ARModelDto?
+
     
     @Published var userPreferencesDto: UserPreferencesDto?
     
@@ -37,9 +44,34 @@ final class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate 
     @Published var userLocation: CLLocationCoordinate2D? = nil
     private let locationManager = CLLocationManager()
     
+    private let availableRouteColors: [Color] = [
+        Color(hue: 0.15, saturation: 0.85, brightness: 0.65), // yellow-orange
+        Color(hue: 0.55, saturation: 0.8, brightness: 0.7),   // teal/cyan
+        Color(hue: 0.75, saturation: 0.7, brightness: 0.6),   // purple-blue
+        Color(hue: 0.03, saturation: 0.9, brightness: 0.6),   // reddish-orange
+        Color(hue: 0.95, saturation: 0.8, brightness: 0.65)   // magenta-pink
+    ]
+
+    private var nextColorIndex = 0
+    
     override init() {
         super.init()
         configureLocationManager()
+    }
+    
+    private func configureLocationManager() {
+        locationManager.delegate = self
+        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager.distanceFilter = 10 // meters
+        locationManager.requestWhenInUseAuthorization()
+        locationManager.startUpdatingLocation()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let latest = locations.last else { return }
+        DispatchQueue.main.async {
+            self.userLocation = latest.coordinate
+        }
     }
     
     func initialLoad() async {
@@ -56,63 +88,22 @@ final class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate 
             print("loading user data...")
             userPreferencesDto = AppState.shared.currentUserPreferences
             markersPerCity = try await GeoService.getMarkers(cityId: userPreferencesDto!.city.id)
+            modelsPerCity = try await GeoService.getModels(cityId: userPreferencesDto!.city.id)
             routesPerCity = try await GeoService.getRoutes(cityId: userPreferencesDto!.city.id)
             
+            try await drawRoutes()
             
-            for i in 0..<routesPerCity.count {
-                let color = Color(
-                    hue: Double.random(in: 0.0...0.1),             // 0 = red, ~0.1 = orange
-                    saturation: Double.random(in: 0.7...1.0),      // strong color
-                    brightness: Double.random(in: 0.4...0.6)       // dark shade
-                )
-                
-                var polylines: [MKPolyline] = []
-                var totalDistance: CLLocationDistance = 0
-                var totalExpectedTime: TimeInterval = 0
-                
-                for j in 0..<routesPerCity[i].markers.count - 1 {
-                    let startCoord = CLLocationCoordinate2D(
-                        latitude: routesPerCity[i].markers[j].latitude,
-                        longitude: routesPerCity[i].markers[j].longitude)
-                    let endCoord = CLLocationCoordinate2D(
-                        latitude: routesPerCity[i].markers[j + 1].latitude,
-                        longitude: routesPerCity[i].markers[j + 1].longitude)
-                    
-                    let request = MKDirections.Request()
-                    request.source = MKMapItem(placemark: MKPlacemark(coordinate: startCoord))
-                    request.destination = MKMapItem(placemark: MKPlacemark(coordinate: endCoord))
-                    request.transportType = userPreferencesDto?.travelType == .CAR ? .automobile : .walking
-                    
-                    let directions = MKDirections(request: request)
-                    let response = try? await directions.calculate()
-                    if let segment = response?.routes.first {
-                        polylines.append(segment.polyline)
-                        totalDistance += segment.distance
-                        totalExpectedTime += segment.expectedTravelTime
-                    }
-                }
-                
-                let fullPolyline = MKPolyline(coordinates: polylines.flatMap { $0.coordinates }, count: polylines.flatMap { $0.coordinates }.count)
-                drawnRoutesPerCity.append(RouteDrawable(
-                    route: routesPerCity[i],
-                    polyline: fullPolyline,
-                    color: color,
-                    totalDistance: totalDistance,
-                    expectedTravelTime: totalExpectedTime
-                ))
-                
-            }
+            // travel advice
+            try await configureWeather()
+            
+            // configure visited markers in routes
+            try await configureVisitedMarkers()
+            
+            // configure visited markers in routes
+            await configureVisitedModels()
             
             // center the camera on city when switching
             configureCamera(for: userPreferencesDto!.city)
-            
-            //travel advice
-            let (temp, advice) = try await weatherUtil.fetchTravelAdvice(
-                lat: userPreferencesDto?.city.latitude ?? 0,
-                lon: userPreferencesDto?.city.longitude ?? 0
-            )
-            self.temperatureCelsius = temp
-            self.travelAdvice = advice
         } catch {
             self.errorMessage = "Failed to load user data"
             print("Load error: \(error)")
@@ -121,19 +112,118 @@ final class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate 
         }
     }
     
-    
-    private func configureLocationManager() {
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.distanceFilter = 10 // meters
-        locationManager.requestWhenInUseAuthorization()
-        locationManager.startUpdatingLocation()
+    private func drawRoutes() async throws {
+        drawnRoutesPerCity = []
+        
+        for i in 0..<routesPerCity.count {
+            try await drawnRoutesPerCity.append(drawSingleRoute(routesPerCity[i]))
+        }
     }
     
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let latest = locations.last else { return }
-        DispatchQueue.main.async {
-            self.userLocation = latest.coordinate
+    private func drawSingleRoute(_ route: RouteDto) async throws -> RouteDrawable {
+        let color = getNextRouteColor()
+        
+        var polylines: [MKPolyline] = []
+        var totalDistance: CLLocationDistance = 0
+        var totalExpectedTime: TimeInterval = 0
+        
+        for j in 0..<route.markers.count - 1 {
+            let startCoord = CLLocationCoordinate2D(
+                latitude: route.markers[j].latitude,
+                longitude: route.markers[j].longitude
+            )
+            let endCoord = CLLocationCoordinate2D(
+                latitude: route.markers[j + 1].latitude,
+                longitude: route.markers[j + 1].longitude
+            )
+            
+            let request = MKDirections.Request()
+            request.source = MKMapItem(placemark: MKPlacemark(coordinate: startCoord))
+            request.destination = MKMapItem(placemark: MKPlacemark(coordinate: endCoord))
+            request.transportType = userPreferencesDto?.travelType == .CAR ? .automobile : .walking
+            
+            let directions = MKDirections(request: request)
+            let response = try? await directions.calculate()
+            if let segment = response?.routes.first {
+                polylines.append(segment.polyline)
+                totalDistance += segment.distance
+                totalExpectedTime += segment.expectedTravelTime
+            }
+        }
+        
+        let combined = polylines.flatMap { $0.coordinates }
+        let fullPolyline = MKPolyline(coordinates: combined, count: combined.count)
+        
+        return RouteDrawable(
+            route: route,
+            polyline: fullPolyline,
+            color: color,
+            totalDistance: totalDistance,
+            expectedTravelTime: totalExpectedTime
+        )
+    }
+    
+    /// Updates the map camera position and bounds manually
+    func updateCamera(to city: CityDto) {
+        userPreferencesDto?.city = city
+        configureCamera(for: city)
+    }
+    
+    /// Central method to configure the camera based on a city
+    private func configureCamera(for city: CityDto) {
+        if let region = city.regionFromBoundingBox {
+            cameraPos = .region(region)
+            cameraBounds = MapCameraBounds(
+                centerCoordinateBounds: region,
+                minimumDistance: 500,
+                maximumDistance: 15_000
+            )
+        } else {
+            let coords = CLLocationCoordinate2D(latitude: city.latitude, longitude: city.longitude)
+            cameraPos = .camera(MapCamera(centerCoordinate: coords, distance: 5_000))
+            cameraBounds = nil
+        }
+        
+        // Used to reset the map view if needed
+        //        cameraKey = UUID()
+    }
+    
+    private func configureWeather() async throws {
+        let (temp, advice) = try await weatherUtil.fetchTravelAdvice(
+            lat: userPreferencesDto?.city.latitude ?? 0,
+            lon: userPreferencesDto?.city.longitude ?? 0
+        )
+        self.temperatureCelsius = temp
+        self.travelAdvice = advice
+    }
+    
+    private func configureVisitedMarkers() async throws {
+        for route in routesPerCity {
+            await configureVisitedMarkersSingle(route)
+        }
+    }
+    
+    private func configureVisitedMarkersSingle(_ route: RouteDto) async {
+        do {
+            let userRouteCompletion = try await UserService.getCompletionByRouteId(routeId: route.id)
+            visitedMarkerIndices[route.id] = userRouteCompletion.step
+            // continue exploration or not
+            visitingMarkerIndices[route.id] = userRouteCompletion.status == .DONE ?
+                                                userRouteCompletion.step :
+                                                userRouteCompletion.step + 1
+        } catch {
+            print("Failed to load completion for route \(route.id): \(error.localizedDescription)")
+            visitedMarkerIndices[route.id] = -1
+            visitingMarkerIndices[route.id] = 0
+        }
+    }
+    
+    private func configureVisitedModels() async {
+        for index in modelsPerCity.indices {
+            do {
+                let completed = try await UserService.getCompletionByModelId(modelId: modelsPerCity[index].id)
+                modelsPerCity[index].completed = completed
+            } catch {}
         }
     }
     
@@ -176,32 +266,8 @@ final class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate 
         return result
     }
     
-    /// Updates the map camera position and bounds manually
-    func updateCamera(to city: CityDto) {
-        userPreferencesDto?.city = city
-        configureCamera(for: city)
-    }
     
-    /// Central method to configure the camera based on a city
-    private func configureCamera(for city: CityDto) {
-        if let region = city.regionFromBoundingBox {
-            cameraPos = .region(region)
-            cameraBounds = MapCameraBounds(
-                centerCoordinateBounds: region,
-                minimumDistance: 500,
-                maximumDistance: 15_000
-            )
-        } else {
-            let coords = CLLocationCoordinate2D(latitude: city.latitude, longitude: city.longitude)
-            cameraPos = .camera(MapCamera(centerCoordinate: coords, distance: 5_000))
-            cameraBounds = nil
-        }
-        
-        // Used to reset the map view if needed
-        //        cameraKey = UUID()
-    }
-    
-    func scrollToMarker(in routeIndex: Int, markerIndex: Int) {
+    func scrollToMarker(in routeIndex: Int, markerIndex: Int, distance: Double = 1000) {
         guard drawnRoutesPerCity.indices.contains(routeIndex),
               drawnRoutesPerCity[routeIndex].route.markers.indices.contains(markerIndex) else { return }
         
@@ -210,77 +276,136 @@ final class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate 
         
         withAnimation {
             cameraPos = .camera(
-                MapCamera(centerCoordinate: coordinate, distance: 1000)
+                MapCamera(centerCoordinate: coordinate, distance: distance)
             )
         }
     }
+    
+    func scrollToCoordinates(_ coordinate: CLLocationCoordinate2D, distance: Double = 1000) {
+        withAnimation {
+            cameraPos = .camera(
+                MapCamera(centerCoordinate: coordinate, distance: distance)
+            )
+        }
+    }
+
     
     func showWeather() {
         OverviewState.shared.showToast(travelAdvice == .badWeather ? "Consider car / indoor" : "Consider foot / outdoor")
     }
     
-}
-
-extension MKCoordinateRegion {
-    func contains(_ coordinate: CLLocationCoordinate2D) -> Bool {
-        let latMin = center.latitude - span.latitudeDelta / 2
-        let latMax = center.latitude + span.latitudeDelta / 2
-        let lonMin = center.longitude - span.longitudeDelta / 2
-        let lonMax = center.longitude + span.longitudeDelta / 2
-        
-        return (latMin...latMax).contains(coordinate.latitude) &&
-        (lonMin...lonMax).contains(coordinate.longitude)
-    }
-}
-
-extension MKPolyline {
-    var coordinates: [CLLocationCoordinate2D] {
-        var coords = [CLLocationCoordinate2D](repeating: kCLLocationCoordinate2DInvalid, count: self.pointCount)
-        self.getCoordinates(&coords, range: NSRange(location: 0, length: self.pointCount))
-        return coords
-    }
-}
-
-// for arrows
-extension CLLocationCoordinate2D {
-    func bearing(to: CLLocationCoordinate2D) -> Double {
-        let fromLat = self.latitude * .pi / 180
-        let fromLon = self.longitude * .pi / 180
-        let toLat = to.latitude * .pi / 180
-        let toLon = to.longitude * .pi / 180
-        
-        let dLon = toLon - fromLon
-        let y = sin(dLon) * cos(toLat)
-        let x = cos(fromLat) * sin(toLat) - sin(fromLat) * cos(toLat) * cos(dLon)
-        let radiansBearing = atan2(y, x)
-        
-        return radiansBearing * 180 / .pi
-    }
-    
-    func midpoint(with: CLLocationCoordinate2D) -> CLLocationCoordinate2D {
-        CLLocationCoordinate2D(
-            latitude: (self.latitude + with.latitude) / 2,
-            longitude: (self.longitude + with.longitude) / 2
-        )
-    }
-    
-    func distance(to other: CLLocationCoordinate2D) -> CLLocationDistance {
-        let loc1 = CLLocation(latitude: self.latitude, longitude: self.longitude)
-        let loc2 = CLLocation(latitude: other.latitude, longitude: other.longitude)
-        return loc1.distance(from: loc2) // in meters
-    }
-}
-
-extension Array where Element == CLLocationCoordinate2D {
-    func sample(every n: Int) -> [(CLLocationCoordinate2D, CLLocationCoordinate2D)] {
-        guard self.count >= 2 else { return [] }
-        var result: [(CLLocationCoordinate2D, CLLocationCoordinate2D)] = []
-        for i in stride(from: 0, to: self.count - 1, by: n) {
-            let start = self[i]
-            let end = self[Swift.min(i + 1, self.count - 1)]
-            result.append((start, end))
+    func saveRouteCompletion(routeId: UUID, step: Int, status: RouteStatus = .IN_PROGRESS) {
+        Task {
+            try await UserService.saveRouteCompletion(completion: UserRouteCompletionDto(status: status, step: step, routeId: routeId))
         }
-        return result
+    }
+    
+    func deleteRoute(routeId: UUID) async {
+        isLoading = true
+        defer { isLoading = false }
+        
+        do {
+            try await GeoService.deleteRouteById(routeId: routeId)
+            OverviewState.shared.showToast("Route is deleted")
+            
+            drawnRoutesPerCity.removeAll { $0.route.id == routeId }
+            routesPerCity.removeAll { $0.id == routeId }
+            
+            let coord = CLLocationCoordinate2D(latitude: userPreferencesDto?.city.latitude ?? 0, longitude:  userPreferencesDto?.city.longitude ?? 0)
+            scrollToCoordinates(coord, distance: 5000)
+        } catch {
+            print("Error deleting route: \(error)")
+        }
+    }
+    
+    func addRoute() async {
+        isRouteLoading = true;
+        defer { isRouteLoading = false }
+        do {
+            let route = try await GeoService.generateRoute(cityId: userPreferencesDto!.city.id)
+            routesPerCity.append(route)
+            
+            try await drawnRoutesPerCity.append(drawSingleRoute(route))
+            
+            await configureVisitedMarkersSingle(route)
+            
+            OverviewState.shared.showToast("Route successfully generated")
+        } catch {
+            OverviewState.shared.showToast(error.localizedDescription)
+        }
+    }
+    
+    func saveEditedRoute() async {
+        isRouteLoading = true;
+        defer { isRouteLoading = false }
+        do {
+            selectedRouteForInfo?.route.markers = selectedRouteReorderedMarkers
+            
+            // Save updated route to backend
+            let route = try await GeoService.saveRoute(route: selectedRouteForInfo!.route)
+
+            // Replace in routesPerCity
+            if let index = routesPerCity.firstIndex(where: { $0.id == route.id }) {
+                routesPerCity[index] = route
+            }
+
+            // Replace in drawnRoutesPerCity
+            let newDrawable = try await drawSingleRoute(route)
+            if let index = drawnRoutesPerCity.firstIndex(where: { $0.route.id == route.id }) {
+                drawnRoutesPerCity[index] = newDrawable
+            }
+
+            await configureVisitedMarkersSingle(route)
+            OverviewState.shared.showToast("Saved")
+        } catch {
+            OverviewState.shared.showToast(error.localizedDescription)
+        }
+    }
+    
+    func getNextRouteColor() -> Color {
+        let color = availableRouteColors[nextColorIndex % availableRouteColors.count]
+        nextColorIndex += 1
+        return color
+    }
+    
+    func branchRoute(routeId: UUID, from: Int) async {
+        isRouteLoading = true;
+        defer { isRouteLoading = false }
+        do {
+            // Save updated route to backend
+            let route = try await GeoService.branchRoute(routeId: routeId, markerIndex: from)
+
+            // Replace in routesPerCity
+            if let index = routesPerCity.firstIndex(where: { $0.id == route.id }) {
+                routesPerCity[index] = route
+            }
+
+            // Replace in drawnRoutesPerCity
+            let newDrawable = try await drawSingleRoute(route)
+            if let index = drawnRoutesPerCity.firstIndex(where: { $0.route.id == route.id }) {
+                drawnRoutesPerCity[index] = newDrawable
+            }
+
+            await configureVisitedMarkersSingle(route)
+            OverviewState.shared.showToast("Branched")
+        } catch {
+            OverviewState.shared.showToast(error.localizedDescription)
+        }
+    }
+    
+    func markModelAsCompleted() async {
+        do {
+            try await GeoService.verifyModel(modelCompletionRequest: ModelCompletionRequest(modelId: selectedARModel!.id, code: selectedARModel!.code))
+            
+            if let index = modelsPerCity.firstIndex(where: { $0.id == selectedARModel!.id }) {
+                modelsPerCity[index].completed = true
+            }
+            
+            selectedARModel = nil
+
+            OverviewState.shared.showToast("Completed")
+        } catch {
+            OverviewState.shared.showToast(error.localizedDescription)
+        }
     }
 }
-

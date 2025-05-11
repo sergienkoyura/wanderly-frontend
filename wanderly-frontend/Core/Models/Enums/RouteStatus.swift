@@ -6,7 +6,7 @@
 //
 import Foundation
 
-enum RouteStatus: Codable {
+enum RouteStatus: String, CaseIterable, Codable {
     case IN_PROGRESS
     case DONE
 }
