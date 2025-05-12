@@ -16,6 +16,7 @@ enum MapDisplayMode: String, CaseIterable {
 }
 
 struct MapView: View {
+    @ObservedObject private var watchManager = WatchSessionManager.shared
     @EnvironmentObject private var appState: AppState
     @StateObject var viewModel = MapViewModel()
     
@@ -138,6 +139,37 @@ struct MapView: View {
         }
         .onChange(of: displayMode) {_, _ in
             OverviewState.shared.showToast(displayTitle)
+        }
+        .onChange(of: watchManager.isNextCalled) { _, newValue in
+            guard newValue else { return }
+
+            // Run the same logic as tapping "Next"
+            if let routeIndex = selectedRouteIndex {
+                let routeId = viewModel.drawnRoutesPerCity[routeIndex].route.id
+                if let visitingIndex = viewModel.visitingMarkerIndices[routeId] {
+                    let markerCount = viewModel.drawnRoutesPerCity[routeIndex].route.markers.count
+
+                    if visitingIndex == markerCount - 1 {
+                        isPlayingRoute = false
+                        viewModel.scrollToMarker(in: routeIndex, markerIndex: visitingIndex, distance: 3500)
+                        viewModel.visitedMarkerIndices[routeId] = visitingIndex
+                        viewModel.saveRouteCompletion(routeId: routeId, step: visitingIndex, status: .DONE)
+                        watchManager.sendRouteStatus(routeIndex: 0, isPlaying: false)
+                    } else {
+                        viewModel.visitedMarkerIndices[routeId] = visitingIndex
+                        viewModel.saveRouteCompletion(routeId: routeId, step: visitingIndex)
+                        viewModel.visitingMarkerIndices[routeId] = visitingIndex + 1
+                        viewModel.scrollToMarker(in: routeIndex, markerIndex: visitingIndex + 1)
+                        watchManager.sendRouteUpdate(routeIndex: routeIndex + 1, step: visitingIndex + 1, totalSteps: markerCount)
+                    }
+                }
+            }
+
+            // Reset the flag
+            watchManager.isNextCalled = false
+        }
+        .onAppear {
+            watchManager.sendRouteStatus(routeIndex: 0, isPlaying: false)
         }
     }
     
@@ -385,6 +417,12 @@ struct MapView: View {
                         withAnimation {
                             isPlayingRoute = true
                             viewModel.scrollToMarker(in: index, markerIndex: viewModel.visitingMarkerIndices[currentRoute.id] ?? 0)
+                            
+                            watchManager.sendRouteUpdate(
+                                routeIndex: index + 1,
+                                step: (viewModel.visitedMarkerIndices[currentRoute.id] ?? 0) + 1,
+                                totalSteps: viewModel.drawnRoutesPerCity[index].route.markers.count
+                            )
                         }
                     }.disabled(completed)
                     Button("Info") {
@@ -428,6 +466,10 @@ struct MapView: View {
                 withAnimation {
                     isPlayingRoute = false
                 }
+                watchManager.sendRouteStatus(
+                    routeIndex: 0,
+                    isPlaying: false
+                )
             } label: {
                 Image(systemName: "pause.fill").dropdownImageStyle()
             }
@@ -446,12 +488,16 @@ struct MapView: View {
                             
                             viewModel.visitedMarkerIndices[routeId] = visitingIndex
                             viewModel.saveRouteCompletion(routeId: routeId, step: visitingIndex, status: .DONE)
+                            
+                            watchManager.sendRouteStatus(routeIndex: 0, isPlaying: false)
                         } else {
                             viewModel.visitedMarkerIndices[routeId] = visitingIndex
                             viewModel.saveRouteCompletion(routeId: routeId, step: visitingIndex)
                             
                             viewModel.visitingMarkerIndices[routeId] = visitingIndex + 1
                             viewModel.scrollToMarker(in: routeIndex, markerIndex: visitingIndex + 1)
+                            
+                            watchManager.sendRouteUpdate(routeIndex: routeIndex + 1, step: visitingIndex + 1, totalSteps: markerCount)
                         }
                         
                     } label: {

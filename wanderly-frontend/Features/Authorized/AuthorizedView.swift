@@ -28,11 +28,7 @@ struct AuthorizedView: View {
         }
         .hideKeyboardOnTapOutside()
         .task {
-            await viewModel.loadUser() { user, userProfile, userPreferences in
-                appState.currentUser = user
-                appState.currentUserProfile = userProfile
-                appState.currentUserPreferences = userPreferences
-            }
+            await viewModel.loadUser()
         }
     }
 }

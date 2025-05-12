@@ -14,7 +14,7 @@ struct MainTabView: View {
             MapView()
                 .tabItem { Label("Map", systemImage: "map") }
 
-            StatisticsView()
+            StatsView()
                 .tabItem { Label("Stats", systemImage: "chart.bar") }
 
             SettingsView()

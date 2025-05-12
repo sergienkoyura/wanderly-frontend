@@ -9,5 +9,6 @@ import Foundation
 struct UserRouteCompletionDto: Codable {
     var status: RouteStatus
     var step: Int
+    var cityName: String?
     var routeId: UUID
 }

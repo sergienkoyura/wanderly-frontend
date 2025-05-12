@@ -14,7 +14,8 @@ enum ApiClient {
         endpoint: String,
         method: String,
         body: Encodable? = nil,
-        injectToken: Bool = true
+        injectToken: Bool = true,
+        queryParams: [String: String]? = nil
     ) async throws -> T? {
         return try await authorizedRequest(
             baseURL: baseURL,
@@ -22,7 +23,8 @@ enum ApiClient {
             method: method,
             body: body,
             injectToken: injectToken,
-            retry: true
+            retry: true,
+            queryParams: queryParams
         )
     }
 
@@ -33,9 +35,17 @@ enum ApiClient {
             method: String,
             body: Encodable?,
             injectToken: Bool,
-            retry: Bool
+            retry: Bool,
+            queryParams: [String: String]? = nil
     ) async throws -> T? {
-        let url = baseURL.appendingPathComponent(endpoint)
+        var components = URLComponents(url: baseURL.appendingPathComponent(endpoint), resolvingAgainstBaseURL: false)!
+       if let queryParams = queryParams {
+           components.queryItems = queryParams.map { URLQueryItem(name: $0.key, value: $0.value) }
+       }
+       guard let url = components.url else {
+           throw URLError(.badURL)
+       }
+        
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

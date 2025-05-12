@@ -15,15 +15,14 @@ enum AuthorizedFlow {
 final class AuthorizedViewModel: ObservableObject {
     @Published var authFlow: AuthorizedFlow?
     
-    func loadUser(onSuccess: @escaping (UserDto, UserProfileDto, UserPreferencesDto) -> Void) async {
+    func loadUser() async {
         do {
-            let user = try await AuthService.getUser()
-            let userProfile = try await UserService.getUserProfile()
-            let userPreferences = try await GeoService.getUserPreferences()
             withAnimation {
                 authFlow = .main
             }
-            onSuccess(user, userProfile, userPreferences)
+            AppState.shared.currentUser = try await AuthService.getUser()
+            AppState.shared.currentUserProfile = try await UserService.getUserProfile()
+            AppState.shared.currentUserPreferences = try await GeoService.getUserPreferences()
         } catch {
             print("Error loading user: \(error)")
             withAnimation {

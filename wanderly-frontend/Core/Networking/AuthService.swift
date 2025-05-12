@@ -57,4 +57,12 @@ enum AuthService {
             method: "GET"
         )!
     }
+    
+    static func logout() async throws {
+        let _: EmptyResponse? = try await ApiClient.request(
+            baseURL: baseURL,
+            endpoint: "logout",
+            method: "POST"
+        )
+    }
 }

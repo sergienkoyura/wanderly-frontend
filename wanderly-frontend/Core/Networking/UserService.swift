@@ -9,13 +9,13 @@ import Foundation
 enum UserService {
     private static var baseURL: URL { ApiClient.baseURL.appendingPathComponent("user") }
 
-    static func saveUserProfile(profile: UserProfileDto) async throws {
-        let _: EmptyResponse? = try await ApiClient.request(
+    static func saveUserProfile(profile: UserProfileDto) async throws -> UserProfileDto {
+        try await ApiClient.request(
             baseURL: baseURL,
             endpoint: "me",
             method: "POST",
             body: profile
-        )
+        )!
     }
     
     static func getUserProfile() async throws -> UserProfileDto {
@@ -47,6 +47,14 @@ enum UserService {
         try await ApiClient.request(
             baseURL: baseURL,
             endpoint: "completions/ar-models/\(modelId)",
+            method: "GET"
+        )!
+    }
+    
+    static func getStatistics() async throws -> StatisticsDto {
+        try await ApiClient.request(
+            baseURL: baseURL,
+            endpoint: "statistics",
             method: "GET"
         )!
     }

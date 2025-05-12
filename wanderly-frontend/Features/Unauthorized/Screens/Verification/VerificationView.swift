@@ -89,7 +89,6 @@ struct VerificationView: View {
     }
 
     func resend() {
-        // TODO: Call API to resend code
         Task {
             await viewModel.register()
             remainingSeconds = 60

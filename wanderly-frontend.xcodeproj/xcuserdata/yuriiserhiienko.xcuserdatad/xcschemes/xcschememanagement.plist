@@ -4,8 +4,15 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>wanderly Watch App.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
 		<key>wanderly-frontend.xcscheme_^#shared#^_</key>
 		<dict>
+			<key>isShown</key>
+			<true/>
 			<key>orderHint</key>
 			<integer>0</integer>
 		</dict>
@@ -13,6 +20,16 @@
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
 		<key>94129DFD2DC10CD700DD2089</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>94C76F192DD0F1FC001EFC6C</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>94C76F472DD0FACC001EFC6C</key>
 		<dict>
 			<key>primary</key>
 			<true/>

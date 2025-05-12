@@ -110,15 +110,12 @@ struct SettingsView: View {
                     .buttonStyle(ProminentButtonStyle())
                     
                     Button("Logout") {
-                        appState.logout()
+                        Task {
+                            await viewModel.logout()
+                            appState.logout()
+                        }
                     }
                     .buttonStyle(ProminentButtonStyle())
-                    
-                    Button("Delete Account") {
-                        viewModel.deleteAccount()
-                    }
-                    .foregroundColor(.red)
-                    .font(.footnote)
                 }
                 
                 Spacer()

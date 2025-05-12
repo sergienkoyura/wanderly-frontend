@@ -82,10 +82,6 @@ struct QuizView: View {
             .buttonStyle(ProminentButtonStyle())
             .disabled(viewModel.isRequestingLocation)
             
-            Button("logout") {
-                appState.logout()
-            }
-            
             Spacer()
         }
         .hideKeyboardOnTapOutside()

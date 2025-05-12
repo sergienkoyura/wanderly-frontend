@@ -74,6 +74,14 @@ final class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate 
         }
     }
     
+    private func getUserLocationIfAllowed() -> CLLocationCoordinate2D? {
+        let status = locationManager.authorizationStatus
+        guard status == .authorizedWhenInUse || status == .authorizedAlways else {
+            return nil
+        }
+        return locationManager.location?.coordinate
+    }
+    
     func initialLoad() async {
         guard !hasLoadedOnce else { return }
         hasLoadedOnce = true
@@ -88,22 +96,14 @@ final class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate 
             print("loading user data...")
             userPreferencesDto = AppState.shared.currentUserPreferences
             markersPerCity = try await GeoService.getMarkers(cityId: userPreferencesDto!.city.id)
-            modelsPerCity = try await GeoService.getModels(cityId: userPreferencesDto!.city.id)
             routesPerCity = try await GeoService.getRoutes(cityId: userPreferencesDto!.city.id)
+            modelsPerCity = try await GeoService.getModels(cityId: userPreferencesDto!.city.id)
             
             try await drawRoutes()
-            
-            // travel advice
-            try await configureWeather()
-            
-            // configure visited markers in routes
-            try await configureVisitedMarkers()
-            
-            // configure visited markers in routes
-            await configureVisitedModels()
-            
-            // center the camera on city when switching
-            configureCamera(for: userPreferencesDto!.city)
+            try await configureWeather() // travel advice
+            try await configureVisitedMarkers() // configure visited markers in routes
+            await configureVisitedModels() // visited models
+            configureCamera(for: userPreferencesDto!.city) // center the camera on city when switching
         } catch {
             self.errorMessage = "Failed to load user data"
             print("Load error: \(error)")
@@ -296,7 +296,7 @@ final class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate 
     
     func saveRouteCompletion(routeId: UUID, step: Int, status: RouteStatus = .IN_PROGRESS) {
         Task {
-            try await UserService.saveRouteCompletion(completion: UserRouteCompletionDto(status: status, step: step, routeId: routeId))
+            try await UserService.saveRouteCompletion(completion: UserRouteCompletionDto(status: status, step: step, cityName: userPreferencesDto?.city.name, routeId: routeId))
         }
     }
     

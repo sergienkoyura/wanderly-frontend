@@ -21,28 +21,22 @@ class SettingsViewModel: ObservableObject {
     private var firstLoad = false;
     
     func load() async {
-//        guard !firstLoad else { return }
-//        firstLoad = true;
-        
-//        isLoading = true;
-//        defer { isLoading = false }
-//        
-        print("loading user data...")
-        
-//        do {
-//            userDto = try await AuthService.me()
-//            userPreferencesDto = try await UserService.me()
-//        } catch {
-//            self.errorMessage = "Failed to load user data"
-//            print("Load error: \(error)")
-            
-//            userPreferencesDto = nil
-//        }
-        
-        
+        print("loading settings...")
         userDto = AppState.shared.currentUser
         userProfileDto = AppState.shared.currentUserProfile
         userPreferencesDto = AppState.shared.currentUserPreferences
+    }
+    
+    func logout() async {
+        isSaving = true
+        defer { isSaving = false }
+        
+        do {
+            try await AuthService.logout()
+        } catch {
+            self.errorMessage = "Failed to logout"
+            print("logout error: \(error)")
+        }
     }
 
     func savePreferences() async {
