@@ -42,6 +42,15 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		940EE72F2DEACB2100187953 /* Exceptions for "assets" folder in "wanderly-frontend" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"ar-demo.mp4",
+				"main-demo.mp4",
+				"watchos-demo.mp4",
+			);
+			target = 94129DFD2DC10CD700DD2089 /* wanderly-frontend */;
+		};
 		94C5C9AA2DC12DAF00A08ECD /* Exceptions for "wanderly-frontend" folder in "wanderly-frontend" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -52,6 +61,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		940EE72B2DEACB1200187953 /* assets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				940EE72F2DEACB2100187953 /* Exceptions for "assets" folder in "wanderly-frontend" target */,
+			);
+			path = assets;
+			sourceTree = "<group>";
+		};
 		94129E002DC10CD700DD2089 /* wanderly-frontend */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -92,6 +109,7 @@
 				94C76F492DD0FACC001EFC6C /* wanderly Watch App */,
 				94129DFF2DC10CD700DD2089 /* Products */,
 				94CC7ECB2DD034D00076574F /* golden_coin.usdz */,
+				940EE72B2DEACB1200187953 /* assets */,
 			);
 			sourceTree = "<group>";
 		};
@@ -122,6 +140,7 @@
 				94C76F512DD0FACE001EFC6C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
+				940EE72B2DEACB1200187953 /* assets */,
 				94129E002DC10CD700DD2089 /* wanderly-frontend */,
 			);
 			name = "wanderly-frontend";
