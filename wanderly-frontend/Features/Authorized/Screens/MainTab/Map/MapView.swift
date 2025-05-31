@@ -336,7 +336,7 @@ struct MapView: View {
             .mapDropdownStyle()
         }
         .padding(.top, 4)
-        .padding(.leading, 8)
+        .padding(.leading, 4)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
     

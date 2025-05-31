@@ -7,7 +7,7 @@
 import Foundation
 
 enum ApiClient {
-    static let baseURL = URL(string: "http://192.168.0.107:9191/api")!
+    static let baseURL = URL(string: "http://192.168.0.106:9191/api")!
     
     static func request<T: Decodable>(
         baseURL: URL,
