@@ -18,14 +18,8 @@ This is the **SwiftUI frontend** for the Wanderly mobile app.
 
 ## 🎬 Demo
 
-### Main flow
-![Main Demo](assets/main-demo.mp4)
-
 ### ARKit integration
-![Main Demo](assets/ar-demo.mp4)
-
-### WatchOS integration
-![Main Demo](assets/watchos-demo.mp4)
+![ARKit Demo](assets/ar-demo.gif)
 
 ---
 

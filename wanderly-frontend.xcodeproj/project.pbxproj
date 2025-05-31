@@ -42,12 +42,10 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		940EE72F2DEACB2100187953 /* Exceptions for "assets" folder in "wanderly-frontend" target */ = {
+		940EE7312DEAD1C000187953 /* Exceptions for "assets" folder in "wanderly-frontend" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				"ar-demo.mp4",
-				"main-demo.mp4",
-				"watchos-demo.mp4",
+				"ar-demo.gif",
 			);
 			target = 94129DFD2DC10CD700DD2089 /* wanderly-frontend */;
 		};
@@ -64,7 +62,7 @@
 		940EE72B2DEACB1200187953 /* assets */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				940EE72F2DEACB2100187953 /* Exceptions for "assets" folder in "wanderly-frontend" target */,
+				940EE7312DEAD1C000187953 /* Exceptions for "assets" folder in "wanderly-frontend" target */,
 			);
 			path = assets;
 			sourceTree = "<group>";
