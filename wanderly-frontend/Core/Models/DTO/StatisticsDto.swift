@@ -10,5 +10,6 @@ import Foundation
 struct StatisticsDto: Decodable {
     var totalCompletedRoutes: Int
     var totalCompletedARModels: Int
+    var totalCompletedMarkers: Int
     var cities: [CityStatisticsDto]
 }

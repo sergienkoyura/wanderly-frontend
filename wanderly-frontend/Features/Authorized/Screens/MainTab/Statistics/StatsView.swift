@@ -32,6 +32,9 @@ struct StatsView: View {
                                 Text("Total completed AR Zones: \(stats.totalCompletedARModels)")
                                     .font(.footnote)
                                     .foregroundColor(.secondary)
+                                Text("Total completed markers: \(stats.totalCompletedMarkers)")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
                             }
                         }
                         
